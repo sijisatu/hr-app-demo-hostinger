@@ -1,0 +1,84 @@
+name: Migration Verification
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  migrate-and-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: pralux_hr
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres -d pralux_hr"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/pralux_hr?schema=public
+      PORT: 4000
+      NODE_ENV: test
+      ENFORCE_BACKEND_AUTH: "false"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            backend/package-lock.json
+
+      - name: Install Root Dependencies
+        run: npm ci
+
+      - name: Install Backend Dependencies
+        run: npm ci
+        working-directory: backend
+
+      - name: Generate Prisma Client
+        run: npm run db:generate
+        working-directory: backend
+
+      - name: Verify Migrations
+        run: npm run db:migrate:deploy
+        working-directory: backend
+
+      - name: Build Backend
+        run: npm run build
+        working-directory: backend
+
+      - name: Start Backend
+        run: npm run start > ../backend-start.log 2>&1 &
+        working-directory: backend
+
+      - name: Wait For API
+        run: |
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:4000/api/health > /dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Backend failed to start in time"
+          cat backend-start.log || true
+          exit 1
+
+      - name: API Smoke Test
+        run: npm run smoke:api
+        working-directory: backend
+

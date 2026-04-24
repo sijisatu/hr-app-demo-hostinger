@@ -1,0 +1,125 @@
+name: CI Quality Gate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  quality-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: pralux_hr
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres -d pralux_hr"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/pralux_hr?schema=public
+      PORT: 4000
+      NODE_ENV: test
+      ENFORCE_BACKEND_AUTH: "false"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            backend/package-lock.json
+
+      - name: Install Frontend Dependencies
+        run: npm ci
+
+      - name: Install Backend Dependencies
+        run: npm ci
+        working-directory: backend
+
+      - name: Frontend Lint
+        run: npm run lint
+
+      - name: Frontend Typecheck
+        run: npm run typecheck
+
+      - name: Frontend Build
+        run: npm run build
+
+      - name: Backend Lint
+        run: npm run lint
+        working-directory: backend
+
+      - name: Backend Typecheck
+        run: npm run typecheck
+        working-directory: backend
+
+      - name: Backend Build
+        run: npm run build
+        working-directory: backend
+
+      - name: Frontend Dependency Audit
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Backend Dependency Audit
+        run: npm audit --omit=dev --audit-level=high
+        working-directory: backend
+
+      - name: Prisma Generate
+        run: npm run db:generate
+        working-directory: backend
+
+      - name: Migration Check
+        run: npm run db:migrate:deploy
+        working-directory: backend
+
+      - name: Start Backend
+        run: npm run start > ../backend-start.log 2>&1 &
+        working-directory: backend
+
+      - name: Wait For Backend
+        run: |
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:4000/api/health/live > /dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Backend failed to start in time"
+          cat backend-start.log || true
+          exit 1
+
+      - name: Backend Smoke Test
+        run: npm run test
+        working-directory: backend
+
+      - name: Start Frontend
+        run: npm run start > frontend-start.log 2>&1 &
+
+      - name: Wait For Frontend
+        run: |
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:3000/login > /dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Frontend failed to start in time"
+          cat frontend-start.log || true
+          exit 1
+
+      - name: Frontend Smoke Test
+        run: npm run test:frontend-smoke

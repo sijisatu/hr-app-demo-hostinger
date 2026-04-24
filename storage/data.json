@@ -1,0 +1,1098 @@
+{
+  "departments": [
+    {
+      "id": "dept-001",
+      "name": "Brand Identity & Strategy",
+      "active": true,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "dept-004",
+      "name": "Consumer Insights",
+      "active": true,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "dept-b127ad56",
+      "name": "Logistics & Supply Chain",
+      "active": true,
+      "createdAt": "2026-04-16T09:45:07.736Z",
+      "updatedAt": "2026-04-16T09:45:07.736Z"
+    },
+    {
+      "id": "dept-002",
+      "name": "Operations",
+      "active": true,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "dept-003",
+      "name": "People & Culture",
+      "active": true,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "dept-98965989",
+      "name": "Systems Infrastructure",
+      "active": true,
+      "createdAt": "2026-04-16T09:45:07.736Z",
+      "updatedAt": "2026-04-16T09:45:07.736Z"
+    }
+  ],
+  "employees": [
+    {
+      "id": "emp-001",
+      "employeeNumber": "EMP-2024-001",
+      "nik": "PRX-0001",
+      "name": "Sarah Jenkins",
+      "email": "s.jenkins@praluxstd.com",
+      "birthPlace": "Jakarta",
+      "birthDate": "1992-02-14",
+      "gender": "female",
+      "maritalStatus": "married",
+      "marriageDate": "2018-06-09",
+      "address": "Jl. Kemang Raya No. 18, Jakarta Selatan",
+      "idCardNumber": "3175091402920001",
+      "education": "S1 Desain Komunikasi Visual - Institut Teknologi Bandung",
+      "workExperience": "10 tahun memimpin tim kreatif, brand system, dan campaign launch lintas channel.",
+      "educationHistory": [
+        {
+          "level": "S1",
+          "institution": "Institut Teknologi Bandung",
+          "major": "Desain Komunikasi Visual",
+          "startYear": "2010",
+          "endYear": "2014"
+        }
+      ],
+      "workExperiences": [
+        {
+          "company": "Lumen Studio",
+          "role": "Creative Lead",
+          "startDate": "2018-01-01",
+          "endDate": "2023-12-31",
+          "description": "Memimpin creative system dan brand campaign."
+        }
+      ],
+      "department": "Brand Identity & Strategy",
+      "position": "Creative Director",
+      "role": "manager",
+      "status": "active",
+      "phone": "+62 812-555-0101",
+      "joinDate": "2024-01-15",
+      "workLocation": "Jakarta HQ",
+      "workType": "hybrid",
+      "managerName": "Adrian Cole",
+      "employmentType": "permanent",
+      "contractStatus": "permanent",
+      "contractStart": "2024-01-15",
+      "contractEnd": null,
+      "baseSalary": 28000000,
+      "allowance": 4500000,
+      "positionSalaryId": "comp-001",
+      "financialComponentIds": [
+        "paycomp-001"
+      ],
+      "taxProfileId": "tax-001",
+      "taxProfile": "PPh 21 TK/0",
+      "bankName": "BCA",
+      "bankAccountMasked": "***9012",
+      "appLoginEnabled": true,
+      "loginUsername": "PRX-0001",
+      "loginPassword": "$2b$12$YEXPhqiomF6p/d7di6N2bednNiwxngoe5.TXjJzpXTGM7Bqm68dLi",
+      "documents": [],
+      "leaveBalances": {
+        "annual": 12,
+        "annualCarryOver": 0,
+        "annualCarryOverExpiresAt": null,
+        "religious": 2,
+        "religiousCarryOver": 0,
+        "religiousCarryOverExpiresAt": null,
+        "maternity": 90,
+        "maternityCarryOver": 0,
+        "maternityCarryOverExpiresAt": null,
+        "paternity": 2,
+        "paternityCarryOver": 0,
+        "paternityCarryOverExpiresAt": null,
+        "marriage": 3,
+        "marriageCarryOver": 0,
+        "marriageCarryOverExpiresAt": null,
+        "bereavement": 2,
+        "bereavementCarryOver": 0,
+        "bereavementCarryOverExpiresAt": null,
+        "sick": 0,
+        "sickUsed": 0,
+        "permission": 4,
+        "permissionCarryOver": 0,
+        "permissionCarryOverExpiresAt": null,
+        "balanceYear": 2026
+      }
+    },
+    {
+      "id": "emp-002",
+      "employeeNumber": "EMP-2024-002",
+      "nik": "PRX-0002",
+      "name": "Marcus Chen",
+      "email": "m.chen@praluxstd.com",
+      "birthPlace": "Bandung",
+      "birthDate": "1994-08-23",
+      "gender": "male",
+      "maritalStatus": "single",
+      "marriageDate": null,
+      "address": "Jl. Setiabudi No. 55, Bandung",
+      "idCardNumber": "3273012308940002",
+      "education": "S1 Teknik Informatika - Universitas Parahyangan",
+      "workExperience": "8 tahun di infrastructure engineering, cloud reliability, dan production hardening.",
+      "educationHistory": [
+        {
+          "level": "S1",
+          "institution": "Universitas Parahyangan",
+          "major": "Teknik Informatika",
+          "startYear": "2012",
+          "endYear": "2016"
+        }
+      ],
+      "workExperiences": [
+        {
+          "company": "InfraOne",
+          "role": "Senior Infrastructure Engineer",
+          "startDate": "2019-02-01",
+          "endDate": "2025-12-31",
+          "description": "Cloud reliability dan production hardening."
+        }
+      ],
+      "department": "Systems Infrastructure",
+      "position": "Lead Engineer",
+      "role": "employee",
+      "status": "inactive",
+      "phone": "+62 812-555-0102",
+      "joinDate": "2024-02-01",
+      "workLocation": "Bandung Hub",
+      "workType": "onsite",
+      "managerName": "Sarah Jenkins",
+      "employmentType": "contract",
+      "contractStatus": "contract",
+      "contractStart": "2024-02-01",
+      "contractEnd": "2026-05-31",
+      "baseSalary": 22000000,
+      "allowance": 2500000,
+      "positionSalaryId": "comp-002",
+      "financialComponentIds": [
+        "paycomp-001"
+      ],
+      "taxProfileId": "tax-002",
+      "taxProfile": "PPh 21 K/0",
+      "bankName": "Mandiri",
+      "bankAccountMasked": "***1834",
+      "appLoginEnabled": false,
+      "loginUsername": "PRX-0002",
+      "loginPassword": "employee123",
+      "documents": [],
+      "leaveBalances": {
+        "annual": 9,
+        "annualCarryOver": 0,
+        "annualCarryOverExpiresAt": null,
+        "religious": 2,
+        "religiousCarryOver": 0,
+        "religiousCarryOverExpiresAt": null,
+        "maternity": 90,
+        "maternityCarryOver": 0,
+        "maternityCarryOverExpiresAt": null,
+        "paternity": 2,
+        "paternityCarryOver": 0,
+        "paternityCarryOverExpiresAt": null,
+        "marriage": 3,
+        "marriageCarryOver": 0,
+        "marriageCarryOverExpiresAt": null,
+        "bereavement": 2,
+        "bereavementCarryOver": 0,
+        "bereavementCarryOverExpiresAt": null,
+        "sick": 0,
+        "sickUsed": 0,
+        "permission": 3,
+        "permissionCarryOver": 0,
+        "permissionCarryOverExpiresAt": null,
+        "balanceYear": 2026
+      }
+    },
+    {
+      "id": "emp-003",
+      "employeeNumber": "EMP-2024-003",
+      "nik": "PRX-0003",
+      "name": "Elena Rodriguez",
+      "email": "e.rodriguez@praluxstd.com",
+      "birthPlace": "Surabaya",
+      "birthDate": "1991-11-05",
+      "gender": "female",
+      "maritalStatus": "married",
+      "marriageDate": "2019-09-14",
+      "address": "Jl. Raya Darmo No. 11, Surabaya",
+      "idCardNumber": "3578020511910003",
+      "education": "S1 Manajemen Operasi - Universitas Airlangga",
+      "workExperience": "9 tahun mengelola supply planning, audit warehouse, dan tim operasional regional.",
+      "educationHistory": [
+        {
+          "level": "S1",
+          "institution": "Universitas Airlangga",
+          "major": "Manajemen Operasi",
+          "startYear": "2009",
+          "endYear": "2013"
+        }
+      ],
+      "workExperiences": [
+        {
+          "company": "Nusa Logistics",
+          "role": "Operations Supervisor",
+          "startDate": "2017-03-01",
+          "endDate": "2024-02-01",
+          "description": "Kelola supply planning dan warehouse ops."
+        }
+      ],
+      "department": "Logistics & Supply Chain",
+      "position": "Operations Manager",
+      "role": "hr",
+      "status": "active",
+      "phone": "+62 812-555-0103",
+      "joinDate": "2024-03-10",
+      "workLocation": "Surabaya Office",
+      "workType": "onsite",
+      "managerName": "Sarah Jenkins",
+      "employmentType": "permanent",
+      "contractStatus": "permanent",
+      "contractStart": "2024-03-10",
+      "contractEnd": null,
+      "baseSalary": 18500000,
+      "allowance": 2000000,
+      "positionSalaryId": "comp-003",
+      "financialComponentIds": [
+        "paycomp-001",
+        "paycomp-003"
+      ],
+      "taxProfileId": "tax-003",
+      "taxProfile": "PPh 21 TK/1",
+      "bankName": "BNI",
+      "bankAccountMasked": "***7741",
+      "appLoginEnabled": true,
+      "loginUsername": "PRX-0003",
+      "loginPassword": "$2b$12$owkpZHkcVo10XkhTlFeO3.cagDco5UmMYX9YP.Bd28zKZoZTQO6JO",
+      "documents": [],
+      "leaveBalances": {
+        "annual": 14,
+        "annualCarryOver": 0,
+        "annualCarryOverExpiresAt": null,
+        "religious": 2,
+        "religiousCarryOver": 0,
+        "religiousCarryOverExpiresAt": null,
+        "maternity": 90,
+        "maternityCarryOver": 0,
+        "maternityCarryOverExpiresAt": null,
+        "paternity": 2,
+        "paternityCarryOver": 0,
+        "paternityCarryOverExpiresAt": null,
+        "marriage": 3,
+        "marriageCarryOver": 0,
+        "marriageCarryOverExpiresAt": null,
+        "bereavement": 2,
+        "bereavementCarryOver": 0,
+        "bereavementCarryOverExpiresAt": null,
+        "sick": 0,
+        "sickUsed": 0,
+        "permission": 4,
+        "permissionCarryOver": 0,
+        "permissionCarryOverExpiresAt": null,
+        "balanceYear": 2026
+      }
+    },
+    {
+      "id": "emp-004",
+      "employeeNumber": "EMP-2024-004",
+      "nik": "PRX-0004",
+      "name": "James Wilson",
+      "email": "j.wilson@praluxstd.com",
+      "birthPlace": "Yogyakarta",
+      "birthDate": "1996-04-19",
+      "gender": "male",
+      "maritalStatus": "single",
+      "marriageDate": null,
+      "address": "Jl. Kaliurang KM 8, Sleman, Yogyakarta",
+      "idCardNumber": "3404131904960004",
+      "education": "S1 Bisnis Digital - Universitas Gadjah Mada",
+      "workExperience": "5 tahun di product strategy, insight synthesis, dan remote collaboration workflow.",
+      "educationHistory": [
+        {
+          "level": "SMA",
+          "institution": "SMA Negeri 3 Yogyakarta",
+          "major": "IPA",
+          "startYear": "2011",
+          "endYear": "2014"
+        },
+        {
+          "level": "S1",
+          "institution": "Universitas Gadjah Mada",
+          "major": "Bisnis Digital",
+          "startYear": "2014",
+          "endYear": "2018"
+        }
+      ],
+      "workExperiences": [
+        {
+          "company": "Insight Lab",
+          "role": "Research Associate",
+          "startDate": "2020-01-01",
+          "endDate": "2022-06-30",
+          "description": "User research dan synthesis."
+        },
+        {
+          "company": "North Product",
+          "role": "Product Strategist",
+          "startDate": "2022-07-01",
+          "endDate": "2025-12-31",
+          "description": "Strategy dan roadmap validation."
+        }
+      ],
+      "department": "Consumer Insights",
+      "position": "Product Strategist",
+      "role": "employee",
+      "status": "active",
+      "phone": "+62 812-555-0104",
+      "joinDate": "2024-04-05",
+      "workLocation": "Remote - Yogyakarta",
+      "workType": "remote",
+      "managerName": "Elena Rodriguez",
+      "employmentType": "intern",
+      "contractStatus": "intern",
+      "contractStart": "2026-02-01",
+      "contractEnd": "2026-08-01",
+      "baseSalary": 14500000,
+      "allowance": 1500000,
+      "positionSalaryId": "comp-004",
+      "financialComponentIds": [
+        "paycomp-001",
+        "paycomp-002"
+      ],
+      "taxProfileId": "tax-001",
+      "taxProfile": "PPh 21 TK/0",
+      "bankName": "BRI",
+      "bankAccountMasked": "***6648",
+      "appLoginEnabled": true,
+      "loginUsername": "PRX-0004",
+      "loginPassword": "$2b$12$Esb/H6Ld9dhD2rrT3BWCcemrQHCOB.T6E.3bLTCsbxPI/za1frzea",
+      "documents": [],
+      "leaveBalances": {
+        "annual": 8,
+        "annualCarryOver": 0,
+        "annualCarryOverExpiresAt": null,
+        "religious": 2,
+        "religiousCarryOver": 0,
+        "religiousCarryOverExpiresAt": null,
+        "maternity": 90,
+        "maternityCarryOver": 0,
+        "maternityCarryOverExpiresAt": null,
+        "paternity": 2,
+        "paternityCarryOver": 0,
+        "paternityCarryOverExpiresAt": null,
+        "marriage": 3,
+        "marriageCarryOver": 0,
+        "marriageCarryOverExpiresAt": null,
+        "bereavement": 2,
+        "bereavementCarryOver": 0,
+        "bereavementCarryOverExpiresAt": null,
+        "sick": 0,
+        "sickUsed": 0,
+        "permission": 2,
+        "permissionCarryOver": 0,
+        "permissionCarryOverExpiresAt": null,
+        "balanceYear": 2026
+      }
+    }
+  ],
+  "compensationProfiles": [
+    {
+      "id": "comp-001",
+      "position": "Creative Director",
+      "baseSalary": 28000000,
+      "active": true,
+      "notes": "Leadership band untuk head of creative and brand direction."
+    },
+    {
+      "id": "comp-002",
+      "position": "Lead Engineer",
+      "baseSalary": 22000000,
+      "active": true,
+      "notes": "Infrastructure engineering band dengan high-availability responsibility."
+    },
+    {
+      "id": "comp-003",
+      "position": "Operations Manager",
+      "baseSalary": 18500000,
+      "active": true,
+      "notes": "Operations leadership package for logistics and supply chain."
+    },
+    {
+      "id": "comp-004",
+      "position": "Product Strategist",
+      "baseSalary": 14500000,
+      "active": true,
+      "notes": "Strategy specialist band for insight and product roles."
+    }
+  ],
+  "taxProfiles": [
+    {
+      "id": "tax-001",
+      "name": "PPh 21 TK/0",
+      "rate": 5,
+      "active": true,
+      "description": "Default individual tax profile."
+    },
+    {
+      "id": "tax-002",
+      "name": "PPh 21 K/0",
+      "rate": 6,
+      "active": true,
+      "description": "Married tax profile."
+    },
+    {
+      "id": "tax-003",
+      "name": "PPh 21 TK/1",
+      "rate": 4.5,
+      "active": true,
+      "description": "Single with dependent tax profile."
+    }
+  ],
+  "attendanceLogs": [
+    {
+      "id": "att-001",
+      "userId": "emp-002",
+      "employeeName": "Marcus Chen",
+      "department": "Systems Infrastructure",
+      "timestamp": "2026-04-02T08:52:00.000Z",
+      "checkIn": "08:52 AM",
+      "checkOut": "05:15 PM",
+      "location": "Bandung Hub",
+      "latitude": -6.917464,
+      "longitude": 107.619123,
+      "description": "Regular attendance check-in",
+      "gpsValidated": true,
+      "gpsDistanceMeters": 42,
+      "photoUrl": null,
+      "status": "on-time",
+      "overtimeMinutes": 15
+    },
+    {
+      "id": "att-002",
+      "userId": "emp-003",
+      "employeeName": "Elena Rodriguez",
+      "department": "Logistics & Supply Chain",
+      "timestamp": "2026-04-02T09:15:00.000Z",
+      "checkIn": "09:15 AM",
+      "checkOut": "06:05 PM",
+      "location": "Surabaya Office",
+      "latitude": -7.257472,
+      "longitude": 112.752088,
+      "description": "Regular attendance check-in",
+      "gpsValidated": true,
+      "gpsDistanceMeters": 31,
+      "photoUrl": null,
+      "status": "late",
+      "overtimeMinutes": 5
+    },
+    {
+      "id": "att-003",
+      "userId": "emp-004",
+      "employeeName": "James Wilson",
+      "department": "Consumer Insights",
+      "timestamp": "2026-04-02T08:45:00.000Z",
+      "checkIn": "08:45 AM",
+      "checkOut": "04:00 PM",
+      "location": "Remote - Yogyakarta",
+      "latitude": -7.797068,
+      "longitude": 110.370529,
+      "description": "Regular attendance check-in",
+      "gpsValidated": false,
+      "gpsDistanceMeters": 820,
+      "photoUrl": null,
+      "status": "early-leave",
+      "overtimeMinutes": 0
+    },
+    {
+      "id": "att-004",
+      "userId": "emp-001",
+      "employeeName": "Sarah Jenkins",
+      "department": "Brand Identity & Strategy",
+      "timestamp": "2026-04-02T08:37:00.000Z",
+      "checkIn": "08:37 AM",
+      "checkOut": null,
+      "location": "Jakarta HQ",
+      "latitude": -6.2,
+      "longitude": 106.816666,
+      "description": "Regular attendance check-in",
+      "gpsValidated": true,
+      "gpsDistanceMeters": 28,
+      "photoUrl": "/storage/attendance-selfies/demo-sarah.jpg",
+      "status": "on-time",
+      "overtimeMinutes": 0
+    }
+  ],
+  "overtimeRequests": [
+    {
+      "id": "ot-001",
+      "userId": "emp-002",
+      "employeeName": "Marcus Chen",
+      "department": "Systems Infrastructure",
+      "date": "2026-04-02",
+      "minutes": 120,
+      "reason": "Production patch window",
+      "status": "approved"
+    },
+    {
+      "id": "ot-002",
+      "userId": "emp-003",
+      "employeeName": "Elena Rodriguez",
+      "department": "Logistics & Supply Chain",
+      "date": "2026-04-02",
+      "minutes": 90,
+      "reason": "Warehouse audit handover",
+      "status": "pending"
+    },
+    {
+      "id": "ot-003",
+      "userId": "emp-001",
+      "employeeName": "Sarah Jenkins",
+      "department": "Brand Identity & Strategy",
+      "date": "2026-04-01",
+      "minutes": 60,
+      "reason": "Campaign launch review",
+      "status": "paid"
+    }
+  ],
+  "leaveRequests": [
+    {
+      "id": "leave-001",
+      "userId": "emp-004",
+      "employeeName": "James Wilson",
+      "type": "Annual Leave",
+      "startDate": "2026-04-08",
+      "endDate": "2026-04-10",
+      "reason": "Family event",
+      "status": "awaiting-hr",
+      "approverFlow": [
+        "Manager Approved",
+        "HR Pending"
+      ],
+      "balanceLabel": "Annual leave 8 days, 3 requested",
+      "requestedAt": "2026-04-01T03:00:00.000Z",
+      "daysRequested": 3,
+      "autoApproved": false
+    },
+    {
+      "id": "leave-002",
+      "userId": "emp-003",
+      "employeeName": "Elena Rodriguez",
+      "type": "Sick Submission",
+      "startDate": "2026-04-02",
+      "endDate": "2026-04-02",
+      "reason": "Medical rest",
+      "status": "approved",
+      "approverFlow": [
+        "Manager Auto-approved",
+        "HR Confirmed"
+      ],
+      "balanceLabel": "Sick leave 10 days, 1 used",
+      "requestedAt": "2026-04-02T01:30:00.000Z",
+      "daysRequested": 1,
+      "autoApproved": true
+    },
+    {
+      "id": "leave-003",
+      "userId": "emp-001",
+      "employeeName": "Sarah Jenkins",
+      "type": "On Duty Request",
+      "startDate": "2026-04-11",
+      "endDate": "2026-04-11",
+      "reason": "Field client coordination",
+      "status": "pending-manager",
+      "approverFlow": [
+        "Manager Pending",
+        "HR Pending"
+      ],
+      "balanceLabel": "Policy-based workflow, 1 day request",
+      "requestedAt": "2026-04-01T09:00:00.000Z",
+      "daysRequested": 1,
+      "autoApproved": false
+    }
+  ],
+  "reimbursementClaimTypes": [
+    {
+      "id": "claim-001",
+      "employeeId": "emp-004",
+      "employeeName": "James Wilson",
+      "department": "Consumer Insights",
+      "designation": "Product Strategist",
+      "category": "medical",
+      "claimType": "Medical",
+      "subType": "Outpatient",
+      "currency": "IDR",
+      "annualLimit": 3500000,
+      "remainingBalance": 2750000,
+      "active": true,
+      "notes": "Rawat jalan, dokter umum, dan obat resep.",
+      "createdAt": "2026-01-02T03:00:00.000Z",
+      "updatedAt": "2026-04-05T03:00:00.000Z"
+    },
+    {
+      "id": "claim-002",
+      "employeeId": "emp-004",
+      "employeeName": "James Wilson",
+      "department": "Consumer Insights",
+      "designation": "Product Strategist",
+      "category": "glasses",
+      "claimType": "Glasses",
+      "subType": "Self",
+      "currency": "IDR",
+      "annualLimit": 1000000,
+      "remainingBalance": 1000000,
+      "active": true,
+      "notes": "Frame dan lensa kacamata pribadi.",
+      "createdAt": "2026-01-02T03:10:00.000Z",
+      "updatedAt": "2026-01-02T03:10:00.000Z"
+    },
+    {
+      "id": "claim-003",
+      "employeeId": "emp-001",
+      "employeeName": "Sarah Jenkins",
+      "department": "Brand Identity & Strategy",
+      "designation": "Creative Director",
+      "category": "communication",
+      "claimType": "Communication",
+      "subType": "Mobile & Internet",
+      "currency": "IDR",
+      "annualLimit": 2400000,
+      "remainingBalance": 1800000,
+      "active": true,
+      "notes": "Tagihan internet rumah dan paket data kerja.",
+      "createdAt": "2026-01-03T04:00:00.000Z",
+      "updatedAt": "2026-04-04T04:00:00.000Z"
+    },
+    {
+      "id": "claim-004",
+      "employeeId": "emp-003",
+      "employeeName": "Elena Rodriguez",
+      "department": "Logistics & Supply Chain",
+      "designation": "Operations Manager",
+      "category": "transport",
+      "claimType": "Transport",
+      "subType": "Business Trip",
+      "currency": "IDR",
+      "annualLimit": 6000000,
+      "remainingBalance": 5200000,
+      "active": true,
+      "notes": "Taksi, parkir, tol, dan transport dinas.",
+      "createdAt": "2026-01-04T02:00:00.000Z",
+      "updatedAt": "2026-04-03T02:00:00.000Z"
+    },
+    {
+      "id": "claim-005",
+      "employeeId": "emp-001",
+      "employeeName": "Sarah Jenkins",
+      "department": "Brand Identity & Strategy",
+      "designation": "Creative Director",
+      "category": "maternity",
+      "claimType": "Maternity",
+      "subType": "Normal Delivery",
+      "currency": "IDR",
+      "annualLimit": 12000000,
+      "remainingBalance": 12000000,
+      "active": true,
+      "notes": "Benefit persalinan normal sesuai plafon perusahaan.",
+      "createdAt": "2026-01-05T05:00:00.000Z",
+      "updatedAt": "2026-01-05T05:00:00.000Z"
+    }
+  ],
+  "reimbursementRequests": [
+    {
+      "id": "reimb-001",
+      "userId": "emp-004",
+      "employeeName": "James Wilson",
+      "department": "Consumer Insights",
+      "designation": "Product Strategist",
+      "claimTypeId": "claim-001",
+      "claimType": "Medical",
+      "subType": "Outpatient",
+      "category": "medical",
+      "currency": "IDR",
+      "amount": 750000,
+      "receiptDate": "2026-04-03",
+      "remarks": "Konsultasi dokter dan obat demam.",
+      "receiptFileName": "medical-outpatient-april.pdf",
+      "receiptFileUrl": "/storage/reimbursements/receipts/sample-medical-outpatient.pdf",
+      "status": "pending-manager",
+      "submittedAt": "2026-04-04T08:30:00.000Z",
+      "approvedAt": null,
+      "processedAt": null,
+      "createdAt": "2026-04-04T08:20:00.000Z",
+      "updatedAt": "2026-04-04T08:30:00.000Z",
+      "approverFlow": [
+        "Employee submitted reimbursement",
+        "Manager pending"
+      ],
+      "balanceSnapshot": 2750000
+    },
+    {
+      "id": "reimb-002",
+      "userId": "emp-001",
+      "employeeName": "Sarah Jenkins",
+      "department": "Brand Identity & Strategy",
+      "designation": "Creative Director",
+      "claimTypeId": "claim-003",
+      "claimType": "Communication",
+      "subType": "Mobile & Internet",
+      "category": "communication",
+      "currency": "IDR",
+      "amount": 600000,
+      "receiptDate": "2026-03-28",
+      "remarks": "Internet rumah untuk sprint launch campaign.",
+      "receiptFileName": "internet-march.pdf",
+      "receiptFileUrl": "/storage/reimbursements/receipts/sample-internet-march.pdf",
+      "status": "processed",
+      "submittedAt": "2026-03-29T07:00:00.000Z",
+      "approvedAt": "2026-03-30T09:15:00.000Z",
+      "processedAt": "2026-03-31T11:00:00.000Z",
+      "createdAt": "2026-03-29T06:45:00.000Z",
+      "updatedAt": "2026-03-31T11:00:00.000Z",
+      "approverFlow": [
+        "Employee submitted reimbursement",
+        "Manager/Leader approved, HR pending",
+        "HRD processed reimbursement"
+      ],
+      "balanceSnapshot": 1800000
+    },
+    {
+      "id": "reimb-003",
+      "userId": "emp-004",
+      "employeeName": "James Wilson",
+      "department": "Consumer Insights",
+      "designation": "Product Strategist",
+      "claimTypeId": "claim-002",
+      "claimType": "Glasses",
+      "subType": "Self",
+      "category": "glasses",
+      "currency": "IDR",
+      "amount": 450000,
+      "receiptDate": "2026-04-10",
+      "remarks": "Penggantian frame kerja laptop.",
+      "receiptFileName": null,
+      "receiptFileUrl": null,
+      "status": "draft",
+      "submittedAt": null,
+      "approvedAt": null,
+      "processedAt": null,
+      "createdAt": "2026-04-10T10:00:00.000Z",
+      "updatedAt": "2026-04-10T10:00:00.000Z",
+      "approverFlow": [
+        "Saved as draft"
+      ],
+      "balanceSnapshot": 1000000
+    },
+    {
+      "id": "reimb-004",
+      "userId": "emp-003",
+      "employeeName": "Elena Rodriguez",
+      "department": "Logistics & Supply Chain",
+      "designation": "Operations Manager",
+      "claimTypeId": "claim-004",
+      "claimType": "Transport",
+      "subType": "Business Trip",
+      "category": "transport",
+      "currency": "IDR",
+      "amount": 800000,
+      "receiptDate": "2026-04-02",
+      "remarks": "Transport site visit Surabaya-Gresik.",
+      "receiptFileName": "transport-site-visit.pdf",
+      "receiptFileUrl": "/storage/reimbursements/receipts/sample-transport-site-visit.pdf",
+      "status": "awaiting-hr",
+      "submittedAt": "2026-04-03T02:30:00.000Z",
+      "approvedAt": "2026-04-03T08:15:00.000Z",
+      "processedAt": null,
+      "createdAt": "2026-04-03T02:15:00.000Z",
+      "updatedAt": "2026-04-03T08:15:00.000Z",
+      "approverFlow": [
+        "Employee submitted reimbursement",
+        "Manager/Leader approved, HR pending"
+      ],
+      "balanceSnapshot": 5200000
+    }
+  ],
+  "payrollComponents": [
+    {
+      "id": "paycomp-001",
+      "code": "BPJS-JHT",
+      "name": "BPJS JHT",
+      "type": "deduction",
+      "calculationType": "percentage",
+      "amount": 0,
+      "percentage": 1,
+      "taxable": false,
+      "active": true,
+      "appliesToAll": true,
+      "employeeIds": [],
+      "description": "Monthly employee BPJS deduction"
+    },
+    {
+      "id": "paycomp-002",
+      "code": "WFH-SUP",
+      "name": "Remote Work Support",
+      "type": "earning",
+      "calculationType": "fixed",
+      "amount": 350000,
+      "percentage": null,
+      "taxable": false,
+      "active": true,
+      "appliesToAll": false,
+      "employeeIds": [
+        "emp-004"
+      ],
+      "description": "Connectivity support for remote team members"
+    },
+    {
+      "id": "paycomp-003",
+      "code": "MEAL-OPS",
+      "name": "Operations Meal Allowance",
+      "type": "earning",
+      "calculationType": "fixed",
+      "amount": 250000,
+      "percentage": null,
+      "taxable": true,
+      "active": true,
+      "appliesToAll": false,
+      "employeeIds": [
+        "emp-003"
+      ],
+      "description": "Meal support for operations employees"
+    }
+  ],
+  "payRuns": [
+    {
+      "id": "payrun-2026-03",
+      "periodLabel": "March 2026 Payroll",
+      "periodStart": "2026-03-01",
+      "periodEnd": "2026-03-31",
+      "payDate": "2026-03-30",
+      "status": "published",
+      "totalGross": 93550000,
+      "totalNet": 86508750,
+      "totalTax": 4094750,
+      "employeeCount": 3,
+      "createdAt": "2026-03-28T08:00:00.000Z",
+      "publishedAt": "2026-03-30T10:00:00.000Z"
+    }
+  ],
+  "payslips": [
+    {
+      "id": "payslip-001",
+      "payRunId": "payrun-2026-03",
+      "userId": "emp-001",
+      "employeeName": "Sarah Jenkins",
+      "employeeNumber": "EMP-2024-001",
+      "department": "Brand Identity & Strategy",
+      "position": "Creative Director",
+      "periodLabel": "March 2026 Payroll",
+      "periodStart": "2026-03-01",
+      "periodEnd": "2026-03-31",
+      "payDate": "2026-03-30",
+      "status": "published",
+      "baseSalary": 28000000,
+      "allowance": 4500000,
+      "overtimePay": 520231,
+      "additionalEarnings": 0,
+      "grossPay": 33020231,
+      "taxDeduction": 1651012,
+      "otherDeductions": 280000,
+      "netPay": 31089219,
+      "bankName": "BCA",
+      "bankAccountMasked": "***9012",
+      "taxProfile": "PPh 21 TK/0",
+      "components": [
+        {
+          "code": "BASE",
+          "name": "Base Salary",
+          "type": "earning",
+          "amount": 28000000,
+          "taxable": true,
+          "source": "base-salary"
+        },
+        {
+          "code": "ALLOW",
+          "name": "Fixed Allowance",
+          "type": "earning",
+          "amount": 4500000,
+          "taxable": true,
+          "source": "allowance"
+        },
+        {
+          "code": "OVERTIME",
+          "name": "Overtime Pay",
+          "type": "earning",
+          "amount": 520231,
+          "taxable": true,
+          "source": "overtime"
+        },
+        {
+          "code": "BPJS-JHT",
+          "name": "BPJS JHT",
+          "type": "deduction",
+          "amount": 280000,
+          "taxable": false,
+          "source": "component"
+        },
+        {
+          "code": "PPH21",
+          "name": "PPh 21",
+          "type": "deduction",
+          "amount": 1651012,
+          "taxable": false,
+          "source": "tax"
+        }
+      ],
+      "generatedFileUrl": "/storage/documents/payslip-001.txt"
+    },
+    {
+      "id": "payslip-002",
+      "payRunId": "payrun-2026-03",
+      "userId": "emp-003",
+      "employeeName": "Elena Rodriguez",
+      "employeeNumber": "EMP-2024-003",
+      "department": "Logistics & Supply Chain",
+      "position": "Operations Manager",
+      "periodLabel": "March 2026 Payroll",
+      "periodStart": "2026-03-01",
+      "periodEnd": "2026-03-31",
+      "payDate": "2026-03-30",
+      "status": "published",
+      "baseSalary": 18500000,
+      "allowance": 2000000,
+      "overtimePay": 0,
+      "additionalEarnings": 250000,
+      "grossPay": 20750000,
+      "taxDeduction": 933750,
+      "otherDeductions": 185000,
+      "netPay": 19631250,
+      "bankName": "BNI",
+      "bankAccountMasked": "***7741",
+      "taxProfile": "PPh 21 TK/1",
+      "components": [
+        {
+          "code": "BASE",
+          "name": "Base Salary",
+          "type": "earning",
+          "amount": 18500000,
+          "taxable": true,
+          "source": "base-salary"
+        },
+        {
+          "code": "ALLOW",
+          "name": "Fixed Allowance",
+          "type": "earning",
+          "amount": 2000000,
+          "taxable": true,
+          "source": "allowance"
+        },
+        {
+          "code": "MEAL-OPS",
+          "name": "Operations Meal Allowance",
+          "type": "earning",
+          "amount": 250000,
+          "taxable": true,
+          "source": "component"
+        },
+        {
+          "code": "BPJS-JHT",
+          "name": "BPJS JHT",
+          "type": "deduction",
+          "amount": 185000,
+          "taxable": false,
+          "source": "component"
+        },
+        {
+          "code": "PPH21",
+          "name": "PPh 21",
+          "type": "deduction",
+          "amount": 933750,
+          "taxable": false,
+          "source": "tax"
+        }
+      ],
+      "generatedFileUrl": "/storage/documents/payslip-002.txt"
+    },
+    {
+      "id": "payslip-003",
+      "payRunId": "payrun-2026-03",
+      "userId": "emp-004",
+      "employeeName": "James Wilson",
+      "employeeNumber": "EMP-2024-004",
+      "department": "Consumer Insights",
+      "position": "Product Strategist",
+      "periodLabel": "March 2026 Payroll",
+      "periodStart": "2026-03-01",
+      "periodEnd": "2026-03-31",
+      "payDate": "2026-03-30",
+      "status": "published",
+      "baseSalary": 14500000,
+      "allowance": 1500000,
+      "overtimePay": 0,
+      "additionalEarnings": 350000,
+      "grossPay": 16350000,
+      "taxDeduction": 817500,
+      "otherDeductions": 145000,
+      "netPay": 15387500,
+      "bankName": "BRI",
+      "bankAccountMasked": "***6648",
+      "taxProfile": "PPh 21 TK/0",
+      "components": [
+        {
+          "code": "BASE",
+          "name": "Base Salary",
+          "type": "earning",
+          "amount": 14500000,
+          "taxable": true,
+          "source": "base-salary"
+        },
+        {
+          "code": "ALLOW",
+          "name": "Fixed Allowance",
+          "type": "earning",
+          "amount": 1500000,
+          "taxable": true,
+          "source": "allowance"
+        },
+        {
+          "code": "WFH-SUP",
+          "name": "Remote Work Support",
+          "type": "earning",
+          "amount": 350000,
+          "taxable": false,
+          "source": "component"
+        },
+        {
+          "code": "BPJS-JHT",
+          "name": "BPJS JHT",
+          "type": "deduction",
+          "amount": 145000,
+          "taxable": false,
+          "source": "component"
+        },
+        {
+          "code": "PPH21",
+          "name": "PPh 21",
+          "type": "deduction",
+          "amount": 817500,
+          "taxable": false,
+          "source": "tax"
+        }
+      ],
+      "generatedFileUrl": "/storage/documents/payslip-003.txt"
+    }
+  ]
+}

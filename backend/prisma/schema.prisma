@@ -1,0 +1,361 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Employee {
+  id                   String   @id
+  employeeNumber       String   @unique
+  nik                  String   @unique
+  name                 String
+  email                String   @unique
+  birthPlace           String
+  birthDate            DateTime
+  gender               String
+  maritalStatus        String
+  marriageDate         DateTime?
+  address              String
+  idCardNumber         String   @unique
+  education            String
+  workExperience       String
+  educationHistory     Json
+  workExperiences      Json
+  department           String
+  position             String
+  role                 String
+  status               String
+  phone                String
+  joinDate             DateTime
+  workLocation         String
+  workType             String
+  managerName          String
+  employmentType       String
+  contractStatus       String
+  contractStart        DateTime
+  contractEnd          DateTime?
+  baseSalary           Decimal  @db.Decimal(18, 2)
+  allowance            Decimal  @db.Decimal(18, 2)
+  positionSalaryId     String?
+  financialComponentIds Json
+  taxProfileId         String?
+  taxProfile           String
+  bankName             String
+  bankAccountMasked    String
+  appLoginEnabled      Boolean  @default(false)
+  loginUsername        String?
+  loginPassword        String?
+  documents            Json
+  leaveBalances        Json
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  attendanceLogs          AttendanceLog[]
+  overtimeRequests        OvertimeRequest[]
+  leaveRequests           LeaveRequest[]
+  reimbursementClaimTypes ReimbursementClaimType[]
+  reimbursementRequests   ReimbursementRequest[]
+  payslips                Payslip[]
+  sessions                AppSession[]
+
+  @@index([department])
+  @@index([role])
+  @@index([status])
+}
+
+model AppSession {
+  id               String    @id
+  userId           String
+  sessionKey       String
+  role             String
+  ipAddress        String?
+  userAgent        String?
+  createdAt        DateTime  @default(now())
+  lastActivityAt   DateTime  @default(now())
+  expiresAt        DateTime
+  revokedAt        DateTime?
+  revocationReason String?
+
+  employee Employee @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, revokedAt, lastActivityAt])
+  @@index([expiresAt])
+  @@index([sessionKey])
+}
+
+model AuditLog {
+  id              String   @id
+  eventKey        String
+  module          String
+  action          String
+  actorUserId     String?
+  actorName       String?
+  actorRole       String?
+  actorDepartment String?
+  targetType      String?
+  targetId        String?
+  targetLabel     String?
+  summary         String
+  beforeData      Json?
+  afterData       Json?
+  metadata        Json?
+  ipAddress       String?
+  userAgent       String?
+  occurredAt      DateTime @default(now())
+  createdAt       DateTime @default(now())
+
+  @@index([module, occurredAt])
+  @@index([actorUserId, occurredAt])
+  @@index([targetType, targetId, occurredAt])
+  @@index([eventKey, occurredAt])
+}
+
+model Department {
+  id        String   @id
+  name      String   @unique
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model AttendanceLog {
+  id                String   @id
+  userId            String
+  employeeName      String
+  department        String
+  timestamp         DateTime
+  checkIn           String
+  checkOut          String?
+  location          String
+  latitude          Decimal  @db.Decimal(10, 7)
+  longitude         Decimal  @db.Decimal(10, 7)
+  description       String
+  gpsValidated      Boolean
+  gpsDistanceMeters Decimal  @db.Decimal(10, 2)
+  photoUrl          String?
+  status            String
+  overtimeMinutes   Int
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  employee Employee @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([timestamp])
+  @@index([department])
+  @@index([userId, timestamp])
+  @@index([status, timestamp])
+}
+
+model OvertimeRequest {
+  id           String   @id
+  userId       String
+  employeeName String
+  department   String
+  date         DateTime
+  minutes      Int
+  reason       String
+  status       String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  employee Employee @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([date])
+  @@index([status])
+}
+
+model LeaveRequest {
+  id                     String   @id
+  userId                 String
+  employeeName           String
+  type                   String
+  startDate              DateTime
+  endDate                DateTime
+  reason                 String
+  status                 String
+  approverFlow           Json
+  balanceLabel           String
+  requestedAt            DateTime
+  daysRequested          Decimal  @db.Decimal(10, 2)
+  autoApproved           Boolean  @default(false)
+  supportingDocumentName String?
+  supportingDocumentUrl  String?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  employee Employee @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([startDate])
+  @@index([requestedAt])
+  @@index([userId, requestedAt])
+}
+
+model PayrollComponent {
+  id              String   @id
+  code            String   @unique
+  name            String
+  type            String
+  calculationType String
+  amount          Decimal  @db.Decimal(18, 2)
+  percentage      Decimal? @db.Decimal(8, 4)
+  taxable         Boolean
+  active          Boolean
+  appliesToAll    Boolean
+  employeeIds     Json
+  description     String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model CompensationProfile {
+  id         String   @id
+  position   String
+  baseSalary Decimal  @db.Decimal(18, 2)
+  active     Boolean
+  notes      String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([position])
+}
+
+model TaxProfile {
+  id          String   @id
+  name        String   @unique
+  rate        Decimal  @db.Decimal(8, 4)
+  active      Boolean
+  description String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model PayRun {
+  id            String   @id
+  periodLabel   String
+  periodStart   DateTime
+  periodEnd     DateTime
+  payDate       DateTime
+  status        String
+  totalGross    Decimal  @db.Decimal(18, 2)
+  totalNet      Decimal  @db.Decimal(18, 2)
+  totalTax      Decimal  @db.Decimal(18, 2)
+  employeeCount Int
+  createdAt     DateTime
+  publishedAt   DateTime?
+  updatedAt     DateTime @updatedAt
+
+  payslips Payslip[]
+
+  @@index([periodStart, periodEnd])
+  @@index([status])
+  @@index([periodEnd])
+}
+
+model Payslip {
+  id                String   @id
+  payRunId          String
+  userId            String
+  employeeName      String
+  employeeNumber    String
+  department        String
+  position          String
+  periodLabel       String
+  periodStart       DateTime
+  periodEnd         DateTime
+  payDate           DateTime
+  status            String
+  baseSalary        Decimal  @db.Decimal(18, 2)
+  allowance         Decimal  @db.Decimal(18, 2)
+  overtimePay       Decimal  @db.Decimal(18, 2)
+  additionalEarnings Decimal @db.Decimal(18, 2)
+  grossPay          Decimal  @db.Decimal(18, 2)
+  taxDeduction      Decimal  @db.Decimal(18, 2)
+  otherDeductions   Decimal  @db.Decimal(18, 2)
+  netPay            Decimal  @db.Decimal(18, 2)
+  bankName          String
+  bankAccountMasked String
+  taxProfile        String
+  components        Json
+  generatedFileUrl  String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  employee Employee @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payRun   PayRun   @relation(fields: [payRunId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([payRunId])
+  @@index([status])
+  @@index([payDate])
+  @@index([userId, payDate])
+}
+
+model ReimbursementClaimType {
+  id               String   @id
+  employeeId       String
+  employeeName     String
+  department       String
+  designation      String
+  category         String
+  claimType        String
+  subType          String
+  currency         String
+  annualLimit      Decimal  @db.Decimal(18, 2)
+  remainingBalance Decimal  @db.Decimal(18, 2)
+  active           Boolean
+  notes            String
+  createdAt        DateTime
+  updatedAt        DateTime
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  reimbursementRequests ReimbursementRequest[]
+
+  @@index([employeeId])
+  @@index([category])
+  @@index([active])
+  @@index([updatedAt])
+  @@index([employeeId, updatedAt])
+}
+
+model ReimbursementRequest {
+  id              String   @id
+  userId          String
+  employeeName    String
+  department      String
+  designation     String
+  claimTypeId     String
+  claimType       String
+  subType         String
+  category        String
+  currency        String
+  amount          Decimal  @db.Decimal(18, 2)
+  receiptDate     DateTime
+  remarks         String
+  receiptFileName String?
+  receiptFileUrl  String?
+  status          String
+  submittedAt     DateTime?
+  approvedAt      DateTime?
+  processedAt     DateTime?
+  createdAt       DateTime
+  updatedAt       DateTime
+  approverFlow    Json
+  balanceSnapshot Decimal  @db.Decimal(18, 2)
+
+  employee  Employee               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  claimTypeRef ReimbursementClaimType @relation(fields: [claimTypeId], references: [id], onDelete: Restrict)
+
+  @@index([userId])
+  @@index([claimTypeId])
+  @@index([status])
+  @@index([updatedAt])
+  @@index([userId, updatedAt])
+}

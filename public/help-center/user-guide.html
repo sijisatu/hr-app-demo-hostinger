@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pralux HR-App User Guide</title>
+  <style>
+    :root {
+      --background: #f3f5f9;
+      --surface: #ffffff;
+      --surface-muted: #f7f8fc;
+      --border: #e2e8f0;
+      --text: #1f2937;
+      --text-muted: #667085;
+      --primary: #142b57;
+      --primary-soft: #e9eef8;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: linear-gradient(180deg, var(--background) 0%, #eef2f8 100%);
+      color: var(--text);
+      font-family: "Segoe UI", Arial, sans-serif;
+      line-height: 1.65;
+    }
+    .page {
+      width: min(980px, calc(100vw - 40px));
+      margin: 28px auto 40px;
+    }
+    .hero,
+    .section {
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.92);
+      border-radius: 26px;
+      padding: 28px;
+      box-shadow: 0 18px 42px rgba(15, 23, 42, 0.06);
+    }
+    .section { margin-top: 22px; }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .brand img {
+      width: 52px;
+      height: 52px;
+      object-fit: contain;
+    }
+    .eyebrow {
+      display: inline-flex;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: var(--primary-soft);
+      color: var(--primary);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    h1, h2, h3 {
+      margin: 0;
+      color: var(--primary);
+      line-height: 1.15;
+    }
+    h1 {
+      margin-top: 18px;
+      font-size: 42px;
+      letter-spacing: -0.04em;
+    }
+    h2 {
+      font-size: 28px;
+      margin-top: 0;
+      margin-bottom: 14px;
+      letter-spacing: -0.03em;
+    }
+    h3 {
+      font-size: 19px;
+      margin-top: 18px;
+      margin-bottom: 8px;
+    }
+    p { margin: 0 0 12px; }
+    ul, ol { margin: 10px 0 0; padding-left: 20px; }
+    li { margin-bottom: 6px; }
+    .grid {
+      display: grid;
+      gap: 18px;
+    }
+    .grid.two {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .card {
+      border: 1px solid var(--border);
+      background: var(--surface-muted);
+      border-radius: 18px;
+      padding: 18px;
+    }
+    .guide-shot {
+      margin-top: 18px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      border-radius: 20px;
+      overflow: hidden;
+      break-inside: avoid;
+    }
+    .guide-shot img {
+      display: block;
+      width: 100%;
+      height: auto;
+      background: #fff;
+    }
+    .guide-shot figcaption {
+      padding: 12px 14px;
+      border-top: 1px solid var(--border);
+      background: var(--surface-muted);
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+    .muted { color: var(--text-muted); }
+
+    @page {
+      size: A4;
+      margin: 14mm;
+    }
+
+    @media print {
+      body { background: white; }
+      .page { width: 100%; margin: 0; }
+      .hero, .section { box-shadow: none; }
+    }
+
+    @media (max-width: 860px) {
+      .page { width: min(100vw - 24px, 980px); margin: 16px auto 28px; }
+      .hero, .section { padding: 20px; }
+      h1 { font-size: 34px; }
+      .grid.two { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <section class="hero">
+      <div class="brand">
+        <img src="./pralux-logo-mark.svg" alt="Pralux HR-App logo" />
+        <div>
+          <div class="eyebrow">Pralux HR-App</div>
+          <p style="margin-top:10px;font-size:14px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.12em;">Workforce intelligence platform</p>
+        </div>
+      </div>
+      <h1>User Guide</h1>
+      <p class="muted" style="max-width:760px;margin-top:14px;font-size:17px;">
+        This guide explains how to use the full Pralux HR-App workspace, including login, dashboards, employee management,
+        attendance workflows, leave operations, reimbursement, reports, activity logs, and Help Center access.
+      </p>
+      <div class="grid two" style="margin-top:24px;">
+        <div class="card">
+          <h3>Who This Guide Is For</h3>
+          <ul>
+            <li>HR and Admin users managing employee records and operational workflows.</li>
+            <li>Managers reviewing attendance and approval-related tasks.</li>
+            <li>Employees using attendance, leave, reimbursement, and profile self-service flows.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>What Is Covered</h3>
+          <ul>
+            <li>Login and role-based access</li>
+            <li>Dashboard usage by role</li>
+            <li>Employee List and Add Employee flow</li>
+            <li>All Employee Attendance subflows</li>
+            <li>Reports, reimbursement, activity logs, and Help Center</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>1. Sign In</h2>
+      <div class="grid two">
+        <div>
+          <h3>Employee Login</h3>
+          <ol>
+            <li>Open the login page.</li>
+            <li>Enter the employee username.</li>
+            <li>Enter the password provided by HR.</li>
+            <li>Click <strong>Sign In</strong>.</li>
+          </ol>
+        </div>
+        <div>
+          <h3>Demo Accounts</h3>
+          <ol>
+            <li>Use the demo account panel on the right side.</li>
+            <li>Select the target role.</li>
+            <li>Click the preferred demo account row.</li>
+            <li>The app will create the session automatically.</li>
+          </ol>
+        </div>
+      </div>
+      <figure class="guide-shot">
+        <img src="./screenshots/login.png" alt="Login screenshot" />
+        <figcaption>Login page with employee sign-in form and demo role access.</figcaption>
+      </figure>
+    </section>
+
+    <section class="section">
+      <h2>2. Dashboard</h2>
+      <div class="grid two">
+        <div>
+          <h3>HR And Admin Dashboard</h3>
+          <ul>
+            <li>Review workforce totals and attendance status.</li>
+            <li>Track latest employees and department insights.</li>
+            <li>Monitor activity and reporting widgets.</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Employee And Manager Dashboard</h3>
+          <ul>
+            <li>Review personal attendance summary.</li>
+            <li>Monitor recent records and requests.</li>
+            <li>Use the quick attendance action.</li>
+          </ul>
+        </div>
+      </div>
+      <figure class="guide-shot">
+        <img src="./screenshots/dashboard-hr.png" alt="HR dashboard screenshot" />
+        <figcaption>Fresh HR dashboard screenshot from the live application.</figcaption>
+      </figure>
+      <figure class="guide-shot">
+        <img src="./screenshots/dashboard-employee.png" alt="Employee dashboard screenshot" />
+        <figcaption>Employee dashboard screenshot with personal attendance-oriented widgets.</figcaption>
+      </figure>
+    </section>
+
+    <section class="section">
+      <h2>3. Employee List</h2>
+      <p>This module is used by HR and Admin users as the master workspace for employee records.</p>
+
+      <h3>Main Actions</h3>
+      <ul>
+        <li>Add employee</li>
+        <li>Edit employee data</li>
+        <li>Manage department and position references</li>
+        <li>Upload documents</li>
+        <li>Reset employee passwords</li>
+        <li>Configure app login access</li>
+      </ul>
+
+      <h3>Add Employee Step By Step</h3>
+      <ol>
+        <li>Open <strong>Employee List</strong>.</li>
+        <li>Click the add employee action.</li>
+        <li>Fill all required tabs before saving.</li>
+        <li>Upload documents if available.</li>
+        <li>Save the employee and confirm the record appears in the table.</li>
+      </ol>
+      <figure class="guide-shot">
+        <img src="./screenshots/employees.png" alt="Employees screenshot" />
+        <figcaption>Employee management page with employee list, form workspace, and admin actions.</figcaption>
+      </figure>
+
+      <h3>Personal Info Tab</h3>
+      <ul>
+        <li>NIK</li>
+        <li>Full name</li>
+        <li>Email</li>
+        <li>Birth place and birth date</li>
+        <li>Gender</li>
+        <li>Marital status and marriage date when applicable</li>
+        <li>Address</li>
+        <li>Identity card number</li>
+        <li>Phone number</li>
+      </ul>
+      <figure class="guide-shot">
+        <img src="./screenshots/employee-add-personal.png" alt="Add Employee Personal Info screenshot" />
+        <figcaption>Add Employee form, Personal Info tab.</figcaption>
+      </figure>
+
+      <h3>Education Tab</h3>
+      <ul>
+        <li>Education summary</li>
+        <li>Education history rows</li>
+        <li>Level, institution, major, start year, and end year</li>
+      </ul>
+      <figure class="guide-shot">
+        <img src="./screenshots/employee-add-education.png" alt="Add Employee Education screenshot" />
+        <figcaption>Add Employee form, Education tab.</figcaption>
+      </figure>
+
+      <h3>Job Details Tab</h3>
+      <ul>
+        <li>Department</li>
+        <li>Position</li>
+        <li>Role</li>
+        <li>Status</li>
+        <li>Work location</li>
+        <li>Work type</li>
+        <li>Manager name</li>
+        <li>Contract type and contract period</li>
+      </ul>
+      <figure class="guide-shot">
+        <img src="./screenshots/employee-add-job.png" alt="Add Employee Job Details screenshot" />
+        <figcaption>Add Employee form, Job Details tab.</figcaption>
+      </figure>
+
+      <h3>Financial Details Tab</h3>
+      <ul>
+        <li>Position salary</li>
+        <li>Earnings and deduction components</li>
+        <li>Tax profile</li>
+        <li>Bank name</li>
+        <li>Bank account</li>
+        <li>App login enabled</li>
+        <li>Login username</li>
+        <li>Login password</li>
+      </ul>
+      <figure class="guide-shot">
+        <img src="./screenshots/employee-add-financial.png" alt="Add Employee Financial Details screenshot" />
+        <figcaption>Add Employee form, Financial Details tab.</figcaption>
+      </figure>
+
+      <h3>Documents Tab</h3>
+      <ul>
+        <li>Select document type</li>
+        <li>Enter document title</li>
+        <li>Add notes if needed</li>
+        <li>Upload file</li>
+        <li>Preview or download uploaded file later</li>
+      </ul>
+
+      <figure class="guide-shot">
+        <img src="./screenshots/employee-add-documents.png" alt="Add Employee Documents screenshot" />
+        <figcaption>Add Employee form, Documents tab for file upload and document metadata.</figcaption>
+      </figure>
+    </section>
+
+    <section class="section">
+      <h2>4. Employee Attendance</h2>
+      <p>The attendance hub is the entry point for all attendance-related workflows. Each subflow has a dedicated page.</p>
+
+      <h3>Attendance Hub</h3>
+      <ul>
+        <li>On Duty Request</li>
+        <li>Sick Submission</li>
+        <li>Leave Request</li>
+        <li>Half Day Leave</li>
+        <li>Submit Overtime</li>
+        <li>Leave Balance</li>
+        <li>Attendance Report for HR</li>
+        <li>Leave Report for HR</li>
+      </ul>
+      <figure class="guide-shot">
+        <img src="./screenshots/attendance-hub.png" alt="Attendance hub screenshot" />
+        <figcaption>Attendance hub with all attendance-related workflow entry points.</figcaption>
+      </figure>
+
+      <h3>Clock In And Clock Out</h3>
+      <ol>
+        <li>Use the quick action from the sidebar or attendance page.</li>
+        <li>Confirm the attendance modal.</li>
+        <li>Allow location or selfie access if required.</li>
+        <li>Submit check-in or check-out.</li>
+        <li>Confirm the status changes after submission.</li>
+      </ol>
+      <figure class="guide-shot">
+        <img src="./screenshots/self-service.png" alt="Self-service screenshot" />
+        <figcaption>Employee self-service attendance flow after sign-in.</figcaption>
+      </figure>
+
+      <h3>On Duty Request</h3>
+      <ol>
+        <li>Open <strong>On Duty Request</strong>.</li>
+        <li>Set the request date.</li>
+        <li>Enter the field work or assignment description.</li>
+        <li>Submit the request.</li>
+        <li>Review submitted requests and generated attendance records.</li>
+      </ol>
+      <figure class="guide-shot">
+        <img src="./screenshots/attendance-on-duty.png" alt="On Duty Request screenshot" />
+        <figcaption>On Duty Request page with form, request history, and generated attendance records.</figcaption>
+      </figure>
+
+      <h3>Sick Submission</h3>
+      <ol>
+        <li>Open <strong>Sick Submission</strong>.</li>
+        <li>Set start and end date.</li>
+        <li>Enter the sick leave reason.</li>
+        <li>Upload the doctor letter or medical evidence if available.</li>
+        <li>Submit and monitor the status.</li>
+      </ol>
+      <figure class="guide-shot">
+        <img src="./screenshots/attendance-sick.png" alt="Sick Submission screenshot" />
+        <figcaption>Sick Submission page with history, form, and supporting document flow.</figcaption>
+      </figure>
+
+      <h3>Leave Request</h3>
+      <ol>
+        <li>Open <strong>Leave Request</strong>.</li>
+        <li>Select one of the leave types allocated to the employee.</li>
+        <li>Choose start and end date.</li>
+        <li>Enter the reason.</li>
+        <li>Upload a supporting document when needed.</li>
+        <li>Submit and review the leave table.</li>
+      </ol>
+      <figure class="guide-shot">
+        <img src="./screenshots/attendance-leave.png" alt="Leave Request screenshot" />
+        <figcaption>Leave Request page with leave type selection, filters, and records table.</figcaption>
+      </figure>
+
+      <h3>Half Day Leave</h3>
+      <ol>
+        <li>Open <strong>Half Day Leave</strong>.</li>
+        <li>Choose the date.</li>
+        <li>Select <strong>Morning</strong> or <strong>Afternoon</strong>.</li>
+        <li>Enter the reason.</li>
+        <li>Submit and review the balance impact.</li>
+      </ol>
+      <figure class="guide-shot">
+        <img src="./screenshots/attendance-half-day.png" alt="Half Day Leave screenshot" />
+        <figcaption>Half Day Leave page with dedicated form and request history.</figcaption>
+      </figure>
+
+      <h3>Submit Overtime</h3>
+      <ol>
+        <li>Open <strong>Submit Overtime</strong>.</li>
+        <li>Choose the overtime date.</li>
+        <li>Enter the duration in minutes.</li>
+        <li>Add the overtime reason.</li>
+        <li>Submit and review overtime records.</li>
+      </ol>
+      <figure class="guide-shot">
+        <img src="./screenshots/attendance-overtime.png" alt="Submit Overtime screenshot" />
+        <figcaption>Submit Overtime page with overtime request form and records table.</figcaption>
+      </figure>
+
+      <h3>Leave Balance</h3>
+      <p>Use this page to review leave allocations, carry-over, available balance, and sick leave usage.</p>
+      <figure class="guide-shot">
+        <img src="./screenshots/attendance-leave-balance.png" alt="Leave Balance screenshot" />
+        <figcaption>Leave Balance page with allocation and carry-over visibility.</figcaption>
+      </figure>
+
+      <h3>Attendance Report</h3>
+      <p>HR users can monitor attendance coverage and team-wide attendance data from this page.</p>
+      <figure class="guide-shot">
+        <img src="./screenshots/attendance-team-report.png" alt="Attendance Report screenshot" />
+        <figcaption>Attendance Report page for organization-wide attendance review.</figcaption>
+      </figure>
+
+      <h3>Leave Report</h3>
+      <p>HR users can review leave history and open supporting documents from the leave report page.</p>
+      <figure class="guide-shot">
+        <img src="./screenshots/attendance-leave-report.png" alt="Leave Report screenshot" />
+        <figcaption>Leave Report page with leave history and supporting document access.</figcaption>
+      </figure>
+    </section>
+
+    <section class="section">
+      <h2>5. Leave System</h2>
+      <p>The Leave System module supports HR and Admin visibility for leave-related administration.</p>
+      <ul>
+        <li>Review leave administration screens</li>
+        <li>Review balance or leave flow context</li>
+        <li>Use the module alongside the attendance-based leave workflows</li>
+      </ul>
+      <figure class="guide-shot">
+        <img src="./screenshots/leave-system.png" alt="Leave System screenshot" />
+        <figcaption>Leave System page used for HR/Admin leave-related operational visibility.</figcaption>
+      </figure>
+    </section>
+
+    <section class="section">
+      <h2>6. Reimbursement</h2>
+      <div class="grid two">
+        <div>
+          <h3>Employee Flow</h3>
+          <ol>
+            <li>Open <strong>Reimbursement</strong>.</li>
+            <li>Select the claim type.</li>
+            <li>Enter amount, receipt date, and remarks.</li>
+            <li>Upload the receipt or supporting file.</li>
+            <li>Submit the request.</li>
+          </ol>
+        </div>
+        <div>
+          <h3>Review Flow</h3>
+          <ul>
+            <li>Review reimbursement queue</li>
+            <li>Check approval status</li>
+            <li>Open supporting file references</li>
+            <li>Process approvals where allowed</li>
+          </ul>
+        </div>
+      </div>
+      <figure class="guide-shot">
+        <img src="./screenshots/reimbursement.png" alt="Reimbursement screenshot" />
+        <figcaption>Reimbursement page with request creation and approval visibility.</figcaption>
+      </figure>
+    </section>
+
+    <section class="section">
+      <h2>7. Reports</h2>
+      <ol>
+        <li>Open <strong>Reports</strong>.</li>
+        <li>Choose the target report.</li>
+        <li>Apply filters or period selection.</li>
+        <li>Review preview data.</li>
+        <li>Export when needed.</li>
+      </ol>
+      <figure class="guide-shot">
+        <img src="./screenshots/reports.png" alt="Reports screenshot" />
+        <figcaption>Reports workspace with preview panels and export-ready reporting flows.</figcaption>
+      </figure>
+    </section>
+
+    <section class="section">
+      <h2>8. Activity Logs</h2>
+      <ul>
+        <li>Track who changed what</li>
+        <li>Filter by module, role, target, and date</li>
+        <li>Review event summary, actor, and affected record</li>
+      </ul>
+      <figure class="guide-shot">
+        <img src="./screenshots/activity-logs.png" alt="Activity logs screenshot" />
+        <figcaption>Activity Logs page with filters, audit rows, and operational traceability.</figcaption>
+      </figure>
+    </section>
+
+    <section class="section">
+      <h2>9. Profile</h2>
+      <ul>
+        <li>Review personal profile data</li>
+        <li>Review department and position</li>
+        <li>Review work-related details</li>
+      </ul>
+      <figure class="guide-shot">
+        <img src="./screenshots/profile.png" alt="Profile screenshot" />
+        <figcaption>Profile page with personal and work information for self-service users.</figcaption>
+      </figure>
+    </section>
+
+    <section class="section">
+      <h2>10. Help Center</h2>
+      <ul>
+        <li>Open the Help Center from the sidebar utility section.</li>
+        <li>Read the online guide.</li>
+        <li>Download the PDF version.</li>
+        <li>Use screenshots to match each module.</li>
+      </ul>
+      <figure class="guide-shot">
+        <img src="./screenshots/help-center.png" alt="Help Center screenshot" />
+        <figcaption>Help Center page with online guide and downloadable PDF access.</figcaption>
+      </figure>
+    </section>
+  </div>
+</body>
+</html>
