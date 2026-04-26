@@ -2839,11 +2839,11 @@ export class AppService {
 
       if (search) {
         where.OR = [
-          { summary: { contains: search, mode: "insensitive" } },
-          { actorName: { contains: search, mode: "insensitive" } },
-          { targetLabel: { contains: search, mode: "insensitive" } },
-          { targetId: { contains: search, mode: "insensitive" } },
-          { eventKey: { contains: search, mode: "insensitive" } }
+          { summary: { contains: search } },
+          { actorName: { contains: search } },
+          { targetLabel: { contains: search } },
+          { targetId: { contains: search } },
+          { eventKey: { contains: search } }
         ];
       }
 
@@ -2897,11 +2897,11 @@ export class AppService {
 
       if (search) {
         where.OR = [
-          { name: { contains: search, mode: "insensitive" } },
-          { email: { contains: search, mode: "insensitive" } },
-          { employeeNumber: { contains: search, mode: "insensitive" } },
-          { department: { contains: search, mode: "insensitive" } },
-          { position: { contains: search, mode: "insensitive" } }
+          { name: { contains: search } },
+          { email: { contains: search } },
+          { employeeNumber: { contains: search } },
+          { department: { contains: search } },
+          { position: { contains: search } }
         ];
       }
 
@@ -3803,8 +3803,7 @@ export class AppService {
       const duplicate = await prisma.department.findFirst({
         where: {
           name: {
-            equals: name,
-            mode: "insensitive"
+            equals: name
           }
         }
       });
@@ -3864,8 +3863,7 @@ export class AppService {
           where: {
             id: { not: id },
             name: {
-              equals: nextName,
-              mode: "insensitive"
+              equals: nextName
             }
           }
         });
@@ -4189,10 +4187,10 @@ export class AppService {
 
       if (search) {
         where.OR = [
-          { employeeName: { contains: search, mode: "insensitive" } },
-          { department: { contains: search, mode: "insensitive" } },
-          { description: { contains: search, mode: "insensitive" } },
-          { location: { contains: search, mode: "insensitive" } }
+          { employeeName: { contains: search } },
+          { department: { contains: search } },
+          { description: { contains: search } },
+          { location: { contains: search } }
         ];
       }
 
@@ -4936,10 +4934,10 @@ export class AppService {
 
       if (search) {
         where.OR = [
-          { employeeName: { contains: search, mode: "insensitive" } },
-          { claimType: { contains: search, mode: "insensitive" } },
-          { subType: { contains: search, mode: "insensitive" } },
-          { remarks: { contains: search, mode: "insensitive" } }
+          { employeeName: { contains: search } },
+          { claimType: { contains: search } },
+          { subType: { contains: search } },
+          { remarks: { contains: search } }
         ];
       }
 
@@ -5773,10 +5771,10 @@ export class AppService {
 
       if (search) {
         where.OR = [
-          { employeeName: { contains: search, mode: "insensitive" } },
-          { employeeNumber: { contains: search, mode: "insensitive" } },
-          { periodLabel: { contains: search, mode: "insensitive" } },
-          { department: { contains: search, mode: "insensitive" } }
+          { employeeName: { contains: search } },
+          { employeeNumber: { contains: search } },
+          { periodLabel: { contains: search } },
+          { department: { contains: search } }
         ];
       }
 

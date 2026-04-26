@@ -4,9 +4,20 @@ import { LogOut } from "lucide-react";
 import clsx from "clsx";
 
 export function LogoutButton({ className, children }: { className?: string; children?: React.ReactNode }) {
-  const handleLogout = () => {
+  const handleLogout = async () => {
     if (typeof window !== "undefined") {
-      window.location.assign("/api/auth/logout?redirect=/login");
+      try {
+        await fetch("/api/auth/logout", {
+          method: "POST",
+          credentials: "include",
+          cache: "no-store"
+        });
+      } catch {
+        // Even if the logout request fails, we still send the user back to login
+        // so the browser stays on the current deployment domain.
+      }
+
+      window.location.assign("/login");
     }
   };
 
