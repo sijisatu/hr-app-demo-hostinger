@@ -16,19 +16,24 @@ import { getServerApiBase } from "@/lib/api-base";
 import { verifyAndExtractSessionToken } from "@/lib/session-token";
 
 const getCurrentBackendSession = cache(async (signedSessionToken: string): Promise<SessionUser | null> => {
-  const response = await fetch(`${getServerApiBase()}/api/auth/session/current`, {
-    cache: "no-store",
-    headers: {
-      Cookie: `${authCookieName}=${signedSessionToken}`,
-      "X-Session-Token": signedSessionToken
+  try {
+    const response = await fetch(`${getServerApiBase()}/api/auth/session/current`, {
+      cache: "no-store",
+      headers: {
+        Cookie: `${authCookieName}=${signedSessionToken}`,
+        "X-Session-Token": signedSessionToken
+      },
+      signal: AbortSignal.timeout(5000)
+    });
+    if (!response.ok) {
+      return null;
     }
-  });
-  if (!response.ok) {
+
+    const payload = (await response.json()) as { data: SessionUser };
+    return payload.data ?? null;
+  } catch {
     return null;
   }
-
-  const payload = (await response.json()) as { data: SessionUser };
-  return payload.data ?? null;
 });
 
 export const getCurrentSession = cache(async (): Promise<SessionUser | null> => {

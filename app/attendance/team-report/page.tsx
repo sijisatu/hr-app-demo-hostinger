@@ -4,25 +4,33 @@ import { DepartmentSnapshotChart } from "@/components/attendance/department-snap
 import { AppShell } from "@/components/layout/app-shell";
 import { AttendanceTable } from "@/components/tables/attendance-table";
 import { requireSession } from "@/lib/auth";
-import { getAttendanceHistory, getAttendanceOverview, getAttendanceOvertime, getEmployees, getLeaveHistory } from "@/lib/api";
+import {
+  getAttendanceHistoryPage,
+  getAttendanceOverview,
+  getAttendanceOvertime,
+  getEmployeesPage,
+  getLeaveHistoryPage
+} from "@/lib/api";
+
+const TEAM_REPORT_LIMIT = 250;
 
 export default async function TeamAttendanceReportPage() {
   await requireSession(["admin", "hr"]);
 
   const [employeesResult, logsResult, overviewResult, overtimeResult, leaveHistoryResult] = await Promise.allSettled([
-    getEmployees(),
-    getAttendanceHistory(),
+    getEmployeesPage({ page: 1, pageSize: TEAM_REPORT_LIMIT }),
+    getAttendanceHistoryPage({ page: 1, pageSize: TEAM_REPORT_LIMIT }),
     getAttendanceOverview(),
     getAttendanceOvertime(),
-    getLeaveHistory()
+    getLeaveHistoryPage({ page: 1, pageSize: TEAM_REPORT_LIMIT })
   ]);
-  const employees = employeesResult.status === "fulfilled" ? employeesResult.value : [];
-  const logs = logsResult.status === "fulfilled" ? logsResult.value : [];
+  const employees = employeesResult.status === "fulfilled" ? employeesResult.value.items : [];
+  const logs = logsResult.status === "fulfilled" ? logsResult.value.items : [];
   const overview = overviewResult.status === "fulfilled"
     ? overviewResult.value
     : { checkedInToday: 0, openCheckIns: 0, gpsValidated: 0, selfieCaptured: 0, overtimeHours: 0 };
   const overtime = overtimeResult.status === "fulfilled" ? overtimeResult.value : [];
-  const leaveHistory = leaveHistoryResult.status === "fulfilled" ? leaveHistoryResult.value : [];
+  const leaveHistory = leaveHistoryResult.status === "fulfilled" ? leaveHistoryResult.value.items : [];
   const dataUnavailable =
     employeesResult.status === "rejected" ||
     logsResult.status === "rejected" ||
@@ -109,7 +117,7 @@ export default async function TeamAttendanceReportPage() {
           <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-white/68">HR Attendance Report</p>
           <h2 className="mt-4 text-[28px] font-semibold leading-tight">A clear view of attendance across the entire organization.</h2>
           <p className="mt-3 max-w-3xl text-[14px] leading-6 text-white/78">
-            Use this report to review attendance performance, coverage, and pending overtime in one place.
+            Use this report to review the latest attendance performance, coverage, and pending overtime in one place.
           </p>
         </section>
 

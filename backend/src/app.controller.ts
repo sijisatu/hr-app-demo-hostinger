@@ -52,6 +52,7 @@ import {
   ExportPayslipDto,
   GeneratePayrollRunDto,
   LeaveApproveDto,
+  LeaveHistoryQueryDto,
   LeaveRequestDto,
   PublishPayrollRunDto,
   ReimbursementApproveDto,
@@ -139,9 +140,9 @@ export class AppController {
 
   @Get("health")
   @PublicRoute()
-  async health(@Res({ passthrough: true }) res: Response) {
-    this.setShortCache(res, 15);
-    return this.wrap(await this.appService.health());
+  async health(@Query("verbose") verbose: string | undefined, @Res({ passthrough: true }) res: Response) {
+    this.setShortCache(res, verbose === "true" ? 15 : 10);
+    return this.wrap(await this.appService.health(verbose === "true"));
   }
 
   @Get("health/live")
@@ -248,6 +249,14 @@ export class AppController {
     this.setNoStore(res);
     const actor = (request as Request & { user?: AuthenticatedActor }).user;
     return this.wrap(await this.appService.getEmployees(query, actor));
+  }
+
+  @Get("employees/:id")
+  @Roles("admin", "hr", "manager", "employee")
+  async employeeById(@Param("id") id: string, @Req() request: Request, @Res({ passthrough: true }) res: Response) {
+    this.setNoStore(res);
+    const actor = await this.resolveActorFromRequest(request);
+    return this.wrap(await this.appService.getEmployeeById(id, actor));
   }
 
   @Post("auth/employee-login")
@@ -514,7 +523,9 @@ export class AppController {
   async attendanceSelfieAsset(@Param("attendanceId") attendanceId: string, @Req() request: Request, @Res() res: Response) {
     const actor = await this.resolveActorFromRequest(request);
     const asset = await this.appService.getAttendanceSelfieAsset(attendanceId, actor);
-    return res.sendFile(asset.absolutePath);
+    res.setHeader("Cache-Control", "private, max-age=300, stale-while-revalidate=600");
+    res.type(asset.contentType);
+    return res.send(asset.buffer);
   }
 
   @Post("attendance/check-out")
@@ -540,9 +551,9 @@ export class AppController {
 
   @Get("leave/history")
   @Roles("admin", "hr", "manager", "employee")
-  async leaveHistory(@Res({ passthrough: true }) res: Response) {
-    this.setNoStore(res);
-    return this.wrap(await this.appService.getLeaveHistory());
+  async leaveHistory(@Query() query: LeaveHistoryQueryDto, @Res({ passthrough: true }) res: Response) {
+    this.setShortCache(res, 20);
+    return this.wrap(await this.appService.getLeaveHistory(query));
   }
 
   @Post("leave/request")

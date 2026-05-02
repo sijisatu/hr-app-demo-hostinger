@@ -46,10 +46,15 @@ export class DatabaseService implements OnModuleDestroy {
     }
 
     if (!this.prismaClient) {
+      const { PrismaMariaDb } = require("@prisma/adapter-mariadb") as {
+        PrismaMariaDb: new (config: string) => unknown;
+      };
       const { PrismaClient } = require("@prisma/client") as {
         PrismaClient: new (options?: Record<string, unknown>) => PrismaClientLike;
       };
+      const adapter = new PrismaMariaDb(this.databaseUrl);
       this.prismaClient = new PrismaClient({
+        adapter,
         log: [
           { emit: "event", level: "warn" },
           { emit: "event", level: "error" }
@@ -59,7 +64,9 @@ export class DatabaseService implements OnModuleDestroy {
         source: "database",
         event: "prisma.client-created",
         details: {
-          mode: this.getModeLabel()
+          mode: this.getModeLabel(),
+          engineType: "client",
+          adapter: "@prisma/adapter-mariadb"
         }
       });
       this.registerPrismaEventLogging();

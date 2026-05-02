@@ -1,7 +1,17 @@
 import { getApiBase } from "@/lib/api-base";
-import { getAttendanceHistory, getEmployees, getLeaveHistory, getReimbursementRequests, type ReimbursementStatus, withApiSession } from "@/lib/api";
+import {
+  getAttendanceHistoryPage,
+  getEmployeesPage,
+  getLeaveHistoryPage,
+  getReimbursementRequestsPage,
+  type EmployeeRecord,
+  type ReimbursementStatus,
+  withApiSession
+} from "@/lib/api";
 import { resolveAssetUrl } from "@/lib/asset-url";
 import { money } from "@/lib/payroll";
+
+const REPORT_FETCH_LIMIT = 300;
 
 export type ReportPeriodPreset = "current-month" | "last-month" | "last-3-months" | "year-to-date" | "all";
 
@@ -115,12 +125,16 @@ function isWithinRange(input: string | null | undefined, range: PeriodRange) {
 
 export async function getReportCenterOverview(periodPreset: ReportPeriodPreset = "current-month"): Promise<ReportCenterOverview> {
   const periodRange = resolvePeriodRange(periodPreset);
-  const [employees, logs, leaves, reimbursements] = await Promise.all([
-    getEmployees(),
-    getAttendanceHistory(),
-    getLeaveHistory(),
-    getReimbursementRequests()
+  const [employeesResult, logsResult, leavesResult, reimbursementsResult] = await Promise.all([
+    getEmployeesPage({ page: 1, pageSize: REPORT_FETCH_LIMIT }),
+    getAttendanceHistoryPage({ page: 1, pageSize: REPORT_FETCH_LIMIT }),
+    getLeaveHistoryPage({ page: 1, pageSize: REPORT_FETCH_LIMIT }),
+    getReimbursementRequestsPage({ page: 1, pageSize: REPORT_FETCH_LIMIT })
   ]);
+  const employees = employeesResult.items;
+  const logs = logsResult.items;
+  const leaves = leavesResult.items;
+  const reimbursements = reimbursementsResult.items;
 
   const filteredLogs = logs.filter((item) => isWithinRange(item.timestamp, periodRange));
   const filteredLeaves = leaves.filter((item) => isWithinRange(item.requestedAt || item.startDate, periodRange));
@@ -174,7 +188,7 @@ export async function getReportCenterOverview(periodPreset: ReportPeriodPreset =
     },
     attendance: {
       metrics: [
-        { label: "Attendance Logs", value: String(filteredLogs.length), note: "Records across all active teams" },
+        { label: "Attendance Logs", value: String(filteredLogs.length), note: "Latest records across all active teams" },
         { label: "On-Time Rate", value: `${filteredLogs.length === 0 ? 0 : Math.round((filteredLogs.filter((entry) => entry.status === "on-time").length / filteredLogs.length) * 100)}%`, note: `${lateRecords} late arrivals need review` },
         { label: "GPS Compliance", value: `${filteredLogs.length === 0 ? 0 : Math.round((filteredLogs.filter((entry) => entry.gpsValidated).length / filteredLogs.length) * 100)}%`, note: `${gpsExceptions} exceptions captured` }
       ],
@@ -220,7 +234,7 @@ export async function getReportCenterOverview(periodPreset: ReportPeriodPreset =
     },
     reimbursement: {
       metrics: [
-        { label: "Total Requests", value: String(filteredReimbursements.length), note: "All reimbursement requests recorded" },
+        { label: "Total Requests", value: String(filteredReimbursements.length), note: "Latest reimbursement requests recorded" },
         { label: "Pending Queue", value: String(pendingReimbursements.length), note: "Waiting manager or HR decision" },
         { label: "Approved/Processed", value: String(approvedReimbursements.length + processedReimbursements.length), note: "Ready or completed for payout" }
       ],
@@ -251,7 +265,7 @@ export async function getReportCenterOverview(periodPreset: ReportPeriodPreset =
   };
 }
 
-function buildAttendanceChart(logs: Awaited<ReturnType<typeof getAttendanceHistory>>) {
+function buildAttendanceChart(logs: Awaited<ReturnType<typeof getAttendanceHistoryPage>>["items"]) {
   const dayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   const buckets = dayLabels.map((label) => ({ label, records: 0, employeesSet: new Set<string>() }));
 
@@ -268,7 +282,7 @@ function buildAttendanceChart(logs: Awaited<ReturnType<typeof getAttendanceHisto
   }));
 }
 
-function buildEmployeeCountChart(employees: Awaited<ReturnType<typeof getEmployees>>) {
+function buildEmployeeCountChart(employees: EmployeeRecord[]) {
   const monthLabels = Array.from({ length: 6 }, (_, index) => {
     const month = new Date();
     month.setUTCDate(1);

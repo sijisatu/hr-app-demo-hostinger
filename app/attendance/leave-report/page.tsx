@@ -3,16 +3,18 @@ import { FileText, Stethoscope, Users } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
 import { LeaveReportTable } from "@/components/tables/leave-report-table";
 import { requireSession } from "@/lib/auth";
-import { getEmployees, getLeaveHistory, isOnDutyLeaveType, isSickLeaveType } from "@/lib/api";
+import { getEmployeesPage, getLeaveHistory, isOnDutyLeaveType, isSickLeaveType } from "@/lib/api";
+
+const LEAVE_REPORT_EMPLOYEE_LIMIT = 250;
 
 export default async function LeaveReportPage() {
   await requireSession(["admin", "hr"]);
 
   const [employeesResult, leaveRequestsResult] = await Promise.allSettled([
-    getEmployees(),
+    getEmployeesPage({ page: 1, pageSize: LEAVE_REPORT_EMPLOYEE_LIMIT }),
     getLeaveHistory()
   ]);
-  const employees = employeesResult.status === "fulfilled" ? employeesResult.value : [];
+  const employees = employeesResult.status === "fulfilled" ? employeesResult.value.items : [];
   const leaveRequests = leaveRequestsResult.status === "fulfilled" ? leaveRequestsResult.value : [];
   const dataUnavailable = employeesResult.status === "rejected" || leaveRequestsResult.status === "rejected";
 

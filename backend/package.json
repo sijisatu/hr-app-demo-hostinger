@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "tsx watch src/main.ts",
-    "build": "tsc -p tsconfig.json",
+    "build": "npm run db:generate && npm run db:migrate:deploy && tsc -p tsconfig.json",
     "start": "node dist/main.js",
     "lint": "tsc -p tsconfig.json --noEmit",
     "typecheck": "tsc -p tsconfig.json --noEmit",
@@ -28,9 +28,13 @@
     "@nestjs/common": "^11.1.19",
     "@nestjs/core": "^11.1.19",
     "@nestjs/platform-express": "^11.1.19",
+    "@prisma/adapter-mariadb": "^6.19.3",
     "@prisma/client": "^6.19.3",
     "@types/compression": "^1.8.1",
     "@types/cookie-parser": "^1.4.10",
+    "@types/express": "^5.0.0",
+    "@types/multer": "^1.4.12",
+    "@types/node": "^22.9.0",
     "bcryptjs": "^3.0.3",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
@@ -42,17 +46,15 @@
     "express": "^4.21.2",
     "express-rate-limit": "^8.3.2",
     "helmet": "^8.1.0",
+    "mariadb": "^3.4.5",
     "multer": "^2.1.1",
     "pg": "^8.20.0",
+    "prisma": "^6.19.3",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.1",
+    "typescript": "^5.6.3"
   },
   "devDependencies": {
-    "@types/express": "^5.0.0",
-    "@types/multer": "^1.4.12",
-    "@types/node": "^22.9.0",
-    "prisma": "^6.19.3",
-    "tsx": "^4.19.2",
-    "typescript": "^5.6.3"
+    "tsx": "^4.19.2"
   }
 }

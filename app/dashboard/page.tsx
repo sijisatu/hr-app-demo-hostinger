@@ -11,10 +11,10 @@ import { requireSession } from "@/lib/auth";
 import {
   deriveActivityStream,
   deriveAttendanceSeries,
-  getAttendanceHistory,
+  getAttendanceHistoryPage,
   getDashboardSummary,
-  getEmployees,
-  getLeaveHistory
+  getEmployeesPage,
+  getLeaveHistoryPage
 } from "@/lib/api";
 
 export default async function DashboardPage() {
@@ -23,17 +23,17 @@ export default async function DashboardPage() {
   const isHrView = session.role === "hr";
   const [summaryResult, attendanceResult, leaveResult, employeesResult] = await Promise.allSettled([
     isEmployeeView ? Promise.resolve(null) : getDashboardSummary(),
-    getAttendanceHistory(),
-    getLeaveHistory(),
-    isHrView ? getEmployees() : Promise.resolve([])
+    getAttendanceHistoryPage(isEmployeeView ? { userId: session.id, page: 1, pageSize: 120 } : { page: 1, pageSize: 250 }),
+    getLeaveHistoryPage(isEmployeeView ? { userId: session.id, page: 1, pageSize: 120 } : { page: 1, pageSize: 250 }),
+    isHrView ? getEmployeesPage({ page: 1, pageSize: 250 }) : Promise.resolve(null)
   ]);
   const summary = summaryResult.status === "fulfilled" ? summaryResult.value : null;
-  const attendanceLogs = attendanceResult.status === "fulfilled" ? attendanceResult.value : [];
-  const leaveRequests = leaveResult.status === "fulfilled" ? leaveResult.value : [];
-  const employees = employeesResult.status === "fulfilled" ? employeesResult.value : [];
+  const attendanceLogs = attendanceResult.status === "fulfilled" ? attendanceResult.value.items : [];
+  const leaveRequests = leaveResult.status === "fulfilled" ? leaveResult.value.items : [];
+  const employees = employeesResult.status === "fulfilled" ? employeesResult.value?.items ?? [] : [];
   const dataUnavailable = [summaryResult, attendanceResult, leaveResult, employeesResult].some((result) => result.status === "rejected");
-  const scopedLogs = isEmployeeView ? attendanceLogs.filter((log) => log.userId === session.id) : attendanceLogs;
-  const scopedLeaves = isEmployeeView ? leaveRequests.filter((leave) => leave.userId === session.id) : leaveRequests;
+  const scopedLogs = attendanceLogs;
+  const scopedLeaves = leaveRequests;
 
   const metrics = isEmployeeView
     ? [

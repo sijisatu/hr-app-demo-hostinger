@@ -14,10 +14,10 @@ import {
   formatLeaveType,
   formatOvertimeStatus,
   getLeaveAllocationAvailable,
-  getAttendanceHistory,
+  getAttendanceHistoryPage,
   getEmployees,
   getAttendanceOvertime,
-  getLeaveHistory,
+  getLeaveHistoryPage,
   isHalfDayLeaveType,
   isOnDutyLeaveType,
   isSickLeaveType
@@ -143,12 +143,26 @@ export function EmployeeAttendanceWorkspace({ fixedAction, showActionCards, back
     }
   }, [fixedAction]);
 
-  const attendanceQuery = useQuery({ queryKey: ["attendance-history"], queryFn: getAttendanceHistory });
+  const attendanceQuery = useQuery({
+    queryKey: ["attendance-history", currentUser?.id],
+    queryFn: () => getAttendanceHistoryPage({ userId: currentUser?.id, page: 1, pageSize: 120 }),
+    enabled: Boolean(currentUser?.id)
+  });
   const employeesQuery = useQuery({ queryKey: ["employees"], queryFn: getEmployees });
-  const leaveQuery = useQuery({ queryKey: ["leave-history"], queryFn: getLeaveHistory });
+  const leaveQuery = useQuery({
+    queryKey: ["leave-history", currentUser?.id],
+    queryFn: () => getLeaveHistoryPage({ userId: currentUser?.id, page: 1, pageSize: 120 }),
+    enabled: Boolean(currentUser?.id)
+  });
+  const leaveApprovalQuery = useQuery({
+    queryKey: ["leave-history-approval", currentUser?.name, currentUser?.department],
+    queryFn: () => getLeaveHistoryPage({ page: 1, pageSize: 200 }),
+    enabled: canApprove
+  });
   const overtimeQuery = useQuery({ queryKey: ["attendance-overtime"], queryFn: getAttendanceOvertime });
 
-  const allLeaveRequests = useMemo(() => leaveQuery.data ?? [], [leaveQuery.data]);
+  const allLeaveRequests = useMemo(() => leaveQuery.data?.items ?? [], [leaveQuery.data]);
+  const allLeaveApprovalRequests = useMemo(() => leaveApprovalQuery.data?.items ?? [], [leaveApprovalQuery.data]);
   const allOvertimeItems = useMemo(() => overtimeQuery.data ?? [], [overtimeQuery.data]);
   const currentEmployee = useMemo(
     () => (employeesQuery.data ?? []).find((item) => item.id === currentUser?.id) ?? null,
@@ -171,8 +185,8 @@ export function EmployeeAttendanceWorkspace({ fixedAction, showActionCards, back
   }, [activeAction, customLeaveTypes, leaveCategory]);
 
   const attendanceLogs = useMemo(
-    () => (attendanceQuery.data ?? []).filter((item) => item.userId === currentUser?.id),
-    [attendanceQuery.data, currentUser?.id]
+    () => attendanceQuery.data?.items ?? [],
+    [attendanceQuery.data]
   );
   const leaveRequests = useMemo(
     () => allLeaveRequests.filter((item) => item.userId === currentUser?.id),
@@ -239,6 +253,7 @@ export function EmployeeAttendanceWorkspace({ fixedAction, showActionCards, back
       setSupportingDocument(null);
       setMessage(`${formatLeaveType(result.type)} submitted successfully.`);
       await queryClient.invalidateQueries({ queryKey: ["leave-history"] });
+      await queryClient.invalidateQueries({ queryKey: ["leave-history-approval"] });
     },
     onError: (error: Error) => setMessage(error.message)
   });
@@ -278,6 +293,7 @@ export function EmployeeAttendanceWorkspace({ fixedAction, showActionCards, back
     onSuccess: async () => {
       setMessage("Leave request updated successfully.");
       await queryClient.invalidateQueries({ queryKey: ["leave-history"] });
+      await queryClient.invalidateQueries({ queryKey: ["leave-history-approval"] });
     },
     onError: (error: Error) => setMessage(error.message)
   });
@@ -369,7 +385,7 @@ export function EmployeeAttendanceWorkspace({ fixedAction, showActionCards, back
     if (activeAction === "overtime" || !canApprove || !currentUser) {
       return [];
     }
-    return allLeaveRequests.filter((item) => {
+    return allLeaveApprovalRequests.filter((item) => {
       const matchesAction =
         activeAction === "leave"
           ? !isOnDutyLeaveType(item.type) && !isSickLeaveType(item.type) && !isHalfDayLeaveType(item.type)
@@ -386,7 +402,7 @@ export function EmployeeAttendanceWorkspace({ fixedAction, showActionCards, back
         employee.managerName.trim().toLowerCase() === currentUser.name.trim().toLowerCase()
       );
     });
-  }, [activeAction, allLeaveRequests, canApprove, currentUser, employeeById]);
+  }, [activeAction, allLeaveApprovalRequests, canApprove, currentUser, employeeById]);
 
   const overtimeApprovalQueue = useMemo(
     () => {

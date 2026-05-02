@@ -1,18 +1,17 @@
 import { AppShell } from "@/components/layout/app-shell";
 import { EmployeeProfileWorkspace } from "@/components/profile/employee-profile-workspace";
 import { requireSession } from "@/lib/auth";
-import { getEmployees, getLeaveHistory } from "@/lib/api";
+import { getEmployee, getLeaveHistoryPage } from "@/lib/api";
 
 export default async function ProfilePage() {
   const session = await requireSession(["manager", "employee"]);
-  const [employeesResult, leaveHistoryResult] = await Promise.allSettled([
-    getEmployees(),
-    getLeaveHistory()
+  const [employeeResult, leaveHistoryResult] = await Promise.allSettled([
+    getEmployee(session.id),
+    getLeaveHistoryPage({ userId: session.id, status: "approved", page: 1, pageSize: 120 })
   ]);
-  const employees = employeesResult.status === "fulfilled" ? employeesResult.value : [];
-  const leaveHistory = leaveHistoryResult.status === "fulfilled" ? leaveHistoryResult.value : [];
-  const dataUnavailable = employeesResult.status === "rejected" || leaveHistoryResult.status === "rejected";
-  const employee = employees.find((item) => item.id === session.id);
+  const employee = employeeResult.status === "fulfilled" ? employeeResult.value : null;
+  const leaveHistory = leaveHistoryResult.status === "fulfilled" ? leaveHistoryResult.value.items : [];
+  const dataUnavailable = employeeResult.status === "rejected" || leaveHistoryResult.status === "rejected";
   const sickLeaveUsed = leaveHistory.filter((item) => item.userId === session.id && item.status === "approved" && (item.type === "Sick Submission" || item.type === "Sick Leave")).length;
 
   if (!employee) {

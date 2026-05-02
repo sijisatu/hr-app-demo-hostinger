@@ -130,7 +130,18 @@ async function bootstrap() {
     }
   });
   const trustProxy = resolveTrustProxySetting(isProduction);
-  app.getHttpAdapter().getInstance().set("trust proxy", trustProxy);
+  const expressApp = app.getHttpAdapter().getInstance();
+  expressApp.set("trust proxy", trustProxy);
+  expressApp.get("/", (_req: Request, res: Response) => {
+    res.status(200).json({
+      success: true,
+      error: null,
+      data: {
+        service: "pralux-attendance-api",
+        status: "online"
+      }
+    });
+  });
   app.setGlobalPrefix("");
   app.use(cookieParser());
   app.use(
@@ -251,7 +262,7 @@ async function bootstrap() {
   app.useGlobalGuards(new SessionAuthGuard(appService, reflector), new RolesGuard(reflector));
   await appService.onModuleInit();
 
-  const port = Number(process.env.PORT ?? 4000);
+  const port = Number(process.env.PORT ?? 3000);
   await app.listen(port, "0.0.0.0");
   await writeSystemLog({
     source: "backend",
@@ -262,7 +273,7 @@ async function bootstrap() {
       trustProxy
     }
   });
-  console.log(`PulsePresence API listening on http://127.0.0.1:${port}`);
+  console.log(`PulsePresence API listening on port ${port}`);
 }
 
 bootstrap().catch(async (error) => {

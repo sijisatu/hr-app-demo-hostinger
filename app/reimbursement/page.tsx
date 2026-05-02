@@ -1,19 +1,25 @@
 import { AppShell } from "@/components/layout/app-shell";
 import { ReimbursementWorkspace } from "@/components/reimbursement/reimbursement-workspace";
 import { requireSession } from "@/lib/auth";
-import { getEmployees, getReimbursementClaimTypes, getReimbursementRequests } from "@/lib/api";
+import { getEmployeesPage, getReimbursementClaimTypes, getReimbursementRequestsPage } from "@/lib/api";
+
+const REIMBURSEMENT_PAGE_LIMIT = 200;
 
 export default async function ReimbursementPage() {
   const session = await requireSession(["admin", "hr", "manager", "employee"]);
-  const shouldLoadEmployees = session.role === "hr" || session.role === "admin";
+  const shouldLoadEmployees = session.role === "hr" || session.role === "admin" || session.role === "manager";
   const [employeesResult, claimTypesResult, requestsResult] = await Promise.allSettled([
-    shouldLoadEmployees ? getEmployees() : Promise.resolve([]),
+    shouldLoadEmployees ? getEmployeesPage({ page: 1, pageSize: REIMBURSEMENT_PAGE_LIMIT }) : Promise.resolve(null),
     getReimbursementClaimTypes(),
-    getReimbursementRequests()
+    getReimbursementRequestsPage(
+      session.role === "employee"
+        ? { userId: session.id, page: 1, pageSize: REIMBURSEMENT_PAGE_LIMIT }
+        : { page: 1, pageSize: REIMBURSEMENT_PAGE_LIMIT }
+    )
   ]);
-  const employees = employeesResult.status === "fulfilled" ? employeesResult.value : [];
+  const employees = employeesResult.status === "fulfilled" ? employeesResult.value?.items ?? [] : [];
   const claimTypes = claimTypesResult.status === "fulfilled" ? claimTypesResult.value : [];
-  const requests = requestsResult.status === "fulfilled" ? requestsResult.value : [];
+  const requests = requestsResult.status === "fulfilled" ? requestsResult.value.items : [];
   const dataUnavailable =
     employeesResult.status === "rejected" ||
     claimTypesResult.status === "rejected" ||

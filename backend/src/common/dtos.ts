@@ -870,6 +870,20 @@ export class AttendanceHistoryQueryDto extends ListQueryDto {
   status?: "on-time" | "late" | "absent" | "early-leave";
 }
 
+export class LeaveHistoryQueryDto extends ListQueryDto {
+  @IsOptional()
+  @IsString()
+  userId?: string;
+
+  @IsOptional()
+  @IsString()
+  status?: string;
+
+  @IsOptional()
+  @IsString()
+  type?: string;
+}
+
 export class ReimbursementRequestListQueryDto extends ListQueryDto {
   @IsOptional()
   @IsString()

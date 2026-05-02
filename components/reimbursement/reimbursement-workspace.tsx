@@ -9,9 +9,9 @@ import {
   deleteReimbursementClaimType,
   formatReimbursementCategory,
   formatReimbursementStatus,
-  getEmployees,
+  getEmployeesPage,
   getReimbursementClaimTypes,
-  getReimbursementRequests,
+  getReimbursementRequestsPage,
   hrProcessReimbursement,
   managerApproveReimbursement,
   type EmployeeRecord,
@@ -70,6 +70,7 @@ const emptyAllocation = (employeeId = ""): AllocationForm => ({ id: null, employ
 const money = (value: number, currencyCode = "IDR") => new Intl.NumberFormat("en-US", { style: "currency", currency: currencyCode, maximumFractionDigits: 0 }).format(value);
 const formatDate = (value: string | null | undefined) => value ? new Date(value).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "-";
 const formatDateTime = (value: string | null | undefined) => value ? new Date(value).toLocaleString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "-";
+const REIMBURSEMENT_QUERY_LIMIT = 200;
 const formatNumberInput = (value: string) => {
   const digits = value.replace(/\D/g, "");
   if (!digits) {
@@ -82,6 +83,17 @@ const numberValue = (value: string) => {
   return Number.isFinite(parsed) ? parsed : 0;
 };
 const statusTone = (status: ReimbursementRequestRecord["status"]) => status === "rejected" ? "danger" : status === "draft" ? "neutral" : status === "approved" || status === "processed" ? "success" : "warning";
+
+function matchesManagerScope(employee: EmployeeRecord | undefined, currentUserName: string, currentDepartment: string) {
+  if (!employee) {
+    return false;
+  }
+
+  return (
+    employee.department.trim().toLowerCase() === currentDepartment.trim().toLowerCase() &&
+    employee.managerName.trim().toLowerCase() === currentUserName.trim().toLowerCase()
+  );
+}
 
 export function ReimbursementWorkspace({ role, userId, initialEmployees, initialClaimTypes, initialRequests }: Props) {
   const queryClient = useQueryClient();
@@ -109,23 +121,44 @@ export function ReimbursementWorkspace({ role, userId, initialEmployees, initial
   const isEmployeeSurface = role === "employee" || role === "manager";
   const employeesQuery = useQuery({
     queryKey: ["employees"],
-    queryFn: getEmployees,
+    queryFn: async () => (await getEmployeesPage({ page: 1, pageSize: REIMBURSEMENT_QUERY_LIMIT })).items,
     initialData: initialEmployees,
-    enabled: isHr
+    enabled: isHr || isManager
   });
   const claimTypesQuery = useQuery({ queryKey: ["reimbursement-claim-types"], queryFn: getReimbursementClaimTypes, initialData: initialClaimTypes });
-  const requestsQuery = useQuery({ queryKey: ["reimbursement-requests"], queryFn: getReimbursementRequests, initialData: initialRequests });
+  const requestsQuery = useQuery({
+    queryKey: ["reimbursement-requests", role, userId],
+    queryFn: async () => (
+      await getReimbursementRequestsPage(
+        role === "employee"
+          ? { userId, page: 1, pageSize: REIMBURSEMENT_QUERY_LIMIT }
+          : { page: 1, pageSize: REIMBURSEMENT_QUERY_LIMIT }
+      )
+    ).items,
+    initialData: initialRequests
+  });
 
   const employees = useMemo(() => employeesQuery.data ?? [], [employeesQuery.data]);
   const claimTypes = useMemo(() => claimTypesQuery.data ?? [], [claimTypesQuery.data]);
   const requests = useMemo(() => requestsQuery.data ?? [], [requestsQuery.data]);
+  const employeeById = useMemo(() => new Map(employees.map((item) => [item.id, item])), [employees]);
   const currentEmployee = employees.find((item) => item.id === userId) ?? null;
   const myClaimTypes = claimTypes.filter((item) => item.employeeId === userId && item.active);
   const myRequests = requests.filter((item) => item.userId === userId);
   const myDrafts = myRequests.filter((item) => item.status === "draft");
   const myHistory = myRequests.filter((item) => item.status !== "draft");
   const selectedClaimType = myClaimTypes.find((item) => item.id === claimForm.claimTypeId) ?? null;
-  const managerQueue = requests.filter((item) => item.status === "pending-manager" && item.userId !== userId);
+  const managerQueue = useMemo(
+    () =>
+      requests.filter((item) => {
+        if (item.status !== "pending-manager" || item.userId === userId || !currentUser) {
+          return false;
+        }
+
+        return matchesManagerScope(employeeById.get(item.userId), currentUser.name, currentUser.department);
+      }),
+    [currentUser, employeeById, requests, userId]
+  );
   const hrRows = useMemo(() => {
     const keyword = hrSearch.trim().toLowerCase();
     return requests.filter((item) => keyword.length === 0 || `${item.employeeName} ${item.claimType} ${item.subType} ${item.department}`.toLowerCase().includes(keyword));

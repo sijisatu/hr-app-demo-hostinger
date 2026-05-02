@@ -525,6 +525,10 @@ export async function getEmployees() {
   return apiFetch<EmployeeRecord[]>("/api/employees");
 }
 
+export async function getEmployee(employeeId: string) {
+  return apiFetch<EmployeeRecord>(`/api/employees/${employeeId}`);
+}
+
 export async function getEmployeesPage(query: {
   page?: number;
   pageSize?: number;
@@ -752,6 +756,17 @@ export async function createCheckOut(payload: { attendanceId: string; checkOut?:
 
 export async function getLeaveHistory() {
   return apiFetch<LeaveRecord[]>("/api/leave/history");
+}
+
+export async function getLeaveHistoryPage(query: {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  userId?: string;
+  status?: LeaveRecord["status"];
+  type?: string;
+}) {
+  return apiFetch<PaginatedList<LeaveRecord>>(`/api/leave/history${toQueryString(query)}`);
 }
 
 export async function createLeaveRequest(payload: {

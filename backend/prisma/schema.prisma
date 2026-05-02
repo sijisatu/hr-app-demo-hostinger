@@ -1,5 +1,6 @@
 generator client {
   provider = "prisma-client-js"
+  engineType = "client"
 }
 
 datasource db {
@@ -64,6 +65,8 @@ model Employee {
   @@index([department])
   @@index([role])
   @@index([status])
+  @@index([name])
+  @@index([department, role, status, name])
 }
 
 model AppSession {
@@ -108,6 +111,7 @@ model AuditLog {
   createdAt       DateTime @default(now())
 
   @@index([module, occurredAt])
+  @@index([occurredAt])
   @@index([actorUserId, occurredAt])
   @@index([targetType, targetId, occurredAt])
   @@index([eventKey, occurredAt])

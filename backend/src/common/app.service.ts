@@ -127,6 +127,172 @@ type AuditLogTarget = {
   targetLabel: string | null;
 };
 
+const HEALTH_STATS_CACHE_TTL_MS = 15_000;
+const HEALTH_DATABASE_CACHE_TTL_MS = 15_000;
+const AUDIT_LOG_FIRST_PAGE_CACHE_TTL_MS = 30_000;
+const DASHBOARD_SUMMARY_CACHE_TTL_MS = 15_000;
+const EMPLOYEE_FIRST_PAGE_CACHE_TTL_MS = 20_000;
+const PAYSLIP_FIRST_PAGE_CACHE_TTL_MS = 20_000;
+const PAYROLL_OVERVIEW_CACHE_TTL_MS = 20_000;
+const PAYROLL_MASTERDATA_CACHE_TTL_MS = 30_000;
+const ATTENDANCE_SELFIE_ASSET_CACHE_TTL_MS = 60_000;
+
+const prismaAuditLogListSelect = {
+  id: true,
+  eventKey: true,
+  module: true,
+  action: true,
+  actorName: true,
+  actorRole: true,
+  actorDepartment: true,
+  targetType: true,
+  targetId: true,
+  targetLabel: true,
+  summary: true,
+  ipAddress: true,
+  occurredAt: true
+} as const;
+
+const prismaEmployeeSelect = {
+  id: true,
+  employeeNumber: true,
+  nik: true,
+  name: true,
+  email: true,
+  birthPlace: true,
+  birthDate: true,
+  gender: true,
+  maritalStatus: true,
+  marriageDate: true,
+  address: true,
+  idCardNumber: true,
+  education: true,
+  workExperience: true,
+  educationHistory: true,
+  workExperiences: true,
+  department: true,
+  position: true,
+  role: true,
+  status: true,
+  phone: true,
+  joinDate: true,
+  workLocation: true,
+  workType: true,
+  managerName: true,
+  employmentType: true,
+  contractStatus: true,
+  contractStart: true,
+  contractEnd: true,
+  baseSalary: true,
+  allowance: true,
+  positionSalaryId: true,
+  financialComponentIds: true,
+  taxProfileId: true,
+  taxProfile: true,
+  bankName: true,
+  bankAccountMasked: true,
+  appLoginEnabled: true,
+  loginUsername: true,
+  documents: true,
+  leaveBalances: true,
+  createdAt: true,
+  updatedAt: true
+} as const;
+
+const prismaEmployeeListSelect = {
+  id: true,
+  employeeNumber: true,
+  nik: true,
+  name: true,
+  email: true,
+  department: true,
+  position: true,
+  role: true,
+  status: true,
+  joinDate: true,
+  workLocation: true,
+  workType: true,
+  managerName: true,
+  employmentType: true,
+  contractStatus: true,
+  contractStart: true,
+  contractEnd: true,
+  appLoginEnabled: true,
+  loginUsername: true
+} as const;
+
+const prismaPayslipListSelect = {
+  id: true,
+  payRunId: true,
+  userId: true,
+  employeeName: true,
+  employeeNumber: true,
+  department: true,
+  position: true,
+  periodLabel: true,
+  periodStart: true,
+  periodEnd: true,
+  payDate: true,
+  status: true,
+  grossPay: true,
+  taxDeduction: true,
+  otherDeductions: true,
+  netPay: true,
+  bankName: true,
+  bankAccountMasked: true,
+  generatedFileUrl: true
+} as const;
+
+const prismaAttendanceSelect = {
+  id: true,
+  userId: true,
+  employeeName: true,
+  department: true,
+  timestamp: true,
+  checkIn: true,
+  checkOut: true,
+  location: true,
+  latitude: true,
+  longitude: true,
+  description: true,
+  gpsValidated: true,
+  gpsDistanceMeters: true,
+  photoUrl: true,
+  status: true,
+  overtimeMinutes: true
+} as const;
+
+const prismaEmployeeIdentitySelect = {
+  id: true,
+  name: true,
+  department: true,
+  position: true
+} as const;
+
+const prismaDepartmentWriteSelect = {
+  id: true,
+  name: true,
+  active: true
+} as const;
+
+const prismaCompensationProfileWriteSelect = {
+  id: true,
+  position: true,
+  baseSalary: true
+} as const;
+
+const prismaTaxProfileWriteSelect = {
+  id: true,
+  name: true
+} as const;
+
+const prismaPayrollComponentAllowanceSelect = {
+  type: true,
+  calculationType: true,
+  amount: true,
+  percentage: true
+} as const;
+
 @Injectable()
 export class AppService {
   private readonly storageRoot = path.resolve(process.cwd(), "storage");
@@ -136,6 +302,10 @@ export class AppService {
   private readonly useDemoSeedData =
     (process.env.BOOTSTRAP_DEMO_DATA ?? "").toLowerCase() === "true" ||
     (!this.isProduction && (process.env.BOOTSTRAP_DEMO_DATA ?? "").toLowerCase() !== "false");
+  private readonly maxPageSize = Math.max(
+    25,
+    Math.floor(this.parsePositiveNumber(process.env.APP_MAX_PAGE_SIZE, this.isProduction ? 100 : 200))
+  );
   private readonly sessionIdleTimeoutMinutes = this.parsePositiveNumber(process.env.APP_SESSION_IDLE_TIMEOUT_MINUTES, 5);
   private readonly sessionMaxLifetimeHours = this.parsePositiveNumber(process.env.APP_SESSION_MAX_LIFETIME_HOURS, 168);
   private readonly sessionMaxConcurrentPerUser = Math.max(1, Math.floor(this.parsePositiveNumber(process.env.APP_SESSION_MAX_CONCURRENT_PER_USER, 3)));
@@ -145,7 +315,103 @@ export class AppService {
   private auditQueue: Promise<void> = Promise.resolve();
   private exportQueue: ExportJob[] = [];
   private activeExportJob = false;
+  private exportWorkerScheduled = false;
   private lastSessionCleanupAt = 0;
+  private lastAuditSequence = 0;
+  private lastAuditHash = "GENESIS";
+  private cachedHealthStats:
+    | {
+        expiresAt: number;
+        services: Record<string, unknown>;
+      }
+    | null = null;
+  private lastKnownDatabaseHealth:
+    | {
+        checkedAt: number;
+        result: Awaited<ReturnType<DatabaseService["healthcheck"]>>;
+      }
+    | null = null;
+  private cachedAuditLogFirstPage:
+    Map<number, {
+      expiresAt: number;
+      items: AuditLogRecord[];
+    }> = new Map();
+  private cachedAttendanceToday:
+    | {
+        dayKey: string;
+        expiresAt: number;
+        items: AttendanceRecord[];
+      }
+    | null = null;
+  private cachedAttendanceOverview:
+    | {
+        dayKey: string;
+        expiresAt: number;
+        value: {
+          checkedInToday: number;
+          openCheckIns: number;
+          gpsValidated: number;
+          selfieCaptured: number;
+          overtimeHours: number;
+        };
+      }
+    | null = null;
+  private cachedDashboardSummary:
+    | {
+        expiresAt: number;
+        value: {
+          employees: number;
+          onTime: number;
+          late: number;
+          absent: number;
+          leavePending: number;
+          storageMode: string;
+        };
+      }
+    | null = null;
+  private cachedEmployeeFirstPage = new Map<string, {
+    expiresAt: number;
+    pageSize: number;
+    total: number;
+    items: EmployeeRecord[];
+  }>();
+  private cachedPayslipFirstPage = new Map<string, {
+    expiresAt: number;
+    pageSize: number;
+    total: number;
+    items: PayslipRecord[];
+  }>();
+  private cachedPayrollOverview:
+    | {
+        expiresAt: number;
+        value: {
+          latestRun: PayRunRecord | null;
+          payrollComponents: number;
+          activeEmployees: number;
+          draftRuns: number;
+          publishedPayslips: number;
+        };
+      }
+    | null = null;
+  private cachedPayrollComponents:
+    | {
+        expiresAt: number;
+        items: PayrollComponentRecord[];
+      }
+    | null = null;
+  private cachedPayRuns:
+    | {
+        expiresAt: number;
+        items: PayRunRecord[];
+      }
+    | null = null;
+  private cachedAttendanceSelfieAssets = new Map<string, {
+    expiresAt: number;
+    absolutePath: string;
+    fileName: string;
+    contentType: string;
+    buffer: Buffer;
+  }>();
 
   constructor(@Inject(DatabaseService) private readonly databaseService: DatabaseService) {}
 
@@ -167,6 +433,8 @@ export class AppService {
       await writeFile(this.dbPath, JSON.stringify(initialSnapshot, null, 2), "utf8");
     }
 
+    await this.initializeAuditLogState();
+
     const prisma = this.getPrisma();
     if (prisma) {
       const employeeCount = await prisma.employee.count();
@@ -178,6 +446,9 @@ export class AppService {
       }
 
       await this.ensurePrismaEmployeePasswordsHashed();
+      await this.primeAuditLogFirstPageCache();
+      await this.primeAttendanceSelfieAssetCache();
+      await this.getCurrentDatabaseHealth();
       return;
     }
 
@@ -201,6 +472,105 @@ export class AppService {
       payRuns: [],
       payslips: []
     };
+  }
+
+  private async initializeAuditLogState() {
+    if (!existsSync(this.auditLogPath)) {
+      this.lastAuditSequence = 0;
+      this.lastAuditHash = "GENESIS";
+      return;
+    }
+
+    try {
+      const content = await readFile(this.auditLogPath, "utf8");
+      const lines = content
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean);
+      this.lastAuditSequence = lines.length;
+
+      const lastLine = lines.at(-1);
+      if (!lastLine) {
+        this.lastAuditHash = "GENESIS";
+        return;
+      }
+
+      try {
+        const parsed = JSON.parse(lastLine) as { entryHash?: unknown };
+        this.lastAuditHash = typeof parsed.entryHash === "string" && parsed.entryHash.trim().length > 0
+          ? parsed.entryHash
+          : "GENESIS";
+      } catch {
+        this.lastAuditHash = "LEGACY";
+      }
+    } catch {
+      this.lastAuditSequence = 0;
+      this.lastAuditHash = "GENESIS";
+    }
+  }
+
+  private async primeAuditLogFirstPageCache() {
+    const prisma = this.getPrisma();
+    if (!prisma?.auditLog?.findMany) {
+      return;
+    }
+
+    for (const pageSize of [25, 50]) {
+      const rows = await prisma.auditLog.findMany({
+        orderBy: { occurredAt: "desc" },
+        take: pageSize,
+        select: prismaAuditLogListSelect
+      });
+      this.cachedAuditLogFirstPage.set(pageSize, {
+        items: rows.map((record: any) => this.mapPrismaAuditLog(record, false)),
+        expiresAt: Date.now() + AUDIT_LOG_FIRST_PAGE_CACHE_TTL_MS
+      });
+    }
+  }
+
+  private async primeAttendanceSelfieAssetCache() {
+    const prisma = this.getPrisma();
+    if (!prisma?.attendanceLog?.findMany) {
+      return;
+    }
+
+    const rows = await prisma.attendanceLog.findMany({
+      where: {
+        photoUrl: {
+          not: null
+        }
+      },
+      orderBy: { timestamp: "desc" },
+      take: 10,
+      select: {
+        id: true,
+        photoUrl: true
+      }
+    });
+
+    for (const row of rows) {
+      if (!row.photoUrl) {
+        continue;
+      }
+
+      const absolutePath = this.resolveStoragePath(String(row.photoUrl));
+      if (!existsSync(absolutePath)) {
+        continue;
+      }
+
+      const fileName = path.basename(absolutePath);
+      const contentType = this.guessContentType(fileName);
+      const buffer = await readFile(absolutePath);
+      for (const role of ["admin", "hr"] as const) {
+        this.cachedAttendanceSelfieAssets.set(`${role}:${String(row.id)}`, {
+          absolutePath,
+          fileName,
+          contentType,
+          buffer,
+          expiresAt: Date.now() + ATTENDANCE_SELFIE_ASSET_CACHE_TTL_MS
+        });
+      }
+    }
   }
 
   private normalizeSnapshot(current: DatabaseShape): DatabaseShape {
@@ -703,6 +1073,7 @@ export class AppService {
 
   private async writeDb(next: DatabaseShape, options?: { allowPrismaSnapshotSync?: boolean }) {
     this.cache = next;
+    this.invalidateReadCaches();
     const prisma = this.getPrisma();
     if (prisma) {
       if (!options?.allowPrismaSnapshotSync) {
@@ -770,7 +1141,7 @@ export class AppService {
 
   private toPageMeta(page?: number, pageSize?: number) {
     const normalizedPage = Math.max(1, Number(page) || 1);
-    const normalizedPageSize = Math.max(1, Math.min(200, Number(pageSize) || 25));
+    const normalizedPageSize = Math.max(1, Math.min(this.maxPageSize, Number(pageSize) || 25));
     return {
       page: normalizedPage,
       pageSize: normalizedPageSize,
@@ -795,7 +1166,8 @@ export class AppService {
     const prisma = this.getPrisma();
     if (prisma) {
       const employees = await prisma.employee.findMany({
-        orderBy: { name: "asc" }
+        orderBy: { name: "asc" },
+        select: prismaEmployeeSelect
       });
       return employees.map((employee: any) => this.sanitizeEmployee(this.mapPrismaEmployee(employee)));
     }
@@ -820,6 +1192,58 @@ export class AppService {
       documents: Array.isArray(employee.documents) ? employee.documents : [],
       leaveBalances: employee.leaveBalances ?? this.normalizeLeaveBalances()
     } as EmployeeRecord;
+  }
+
+  private mapPrismaEmployeeListRecord(employee: any): EmployeeRecord {
+    return {
+      id: String(employee.id),
+      employeeNumber: String(employee.employeeNumber),
+      nik: String(employee.nik),
+      name: String(employee.name),
+      email: String(employee.email),
+      department: String(employee.department),
+      position: String(employee.position),
+      role: employee.role,
+      status: employee.status,
+      joinDate: this.toDateString(employee.joinDate),
+      workLocation: String(employee.workLocation),
+      workType: employee.workType,
+      managerName: String(employee.managerName),
+      employmentType: employee.employmentType,
+      contractStatus: employee.contractStatus,
+      contractStart: this.toDateString(employee.contractStart),
+      contractEnd: employee.contractEnd ? this.toDateString(employee.contractEnd) : null,
+      appLoginEnabled: Boolean(employee.appLoginEnabled),
+      loginUsername: employee.loginUsername ? String(employee.loginUsername) : null
+    } as EmployeeRecord;
+  }
+
+  private toEmployeeSummary(employee: EmployeeRecord): EmployeeRecord {
+    return {
+      ...employee,
+      birthPlace: "",
+      birthDate: "",
+      gender: "male",
+      maritalStatus: "single",
+      marriageDate: null,
+      address: "",
+      idCardNumber: "",
+      education: "",
+      workExperience: "",
+      educationHistory: [],
+      workExperiences: [],
+      phone: "",
+      baseSalary: 0,
+      allowance: 0,
+      positionSalaryId: null,
+      financialComponentIds: [],
+      taxProfileId: null,
+      taxProfile: "",
+      bankName: "",
+      bankAccountMasked: "",
+      documents: [],
+      leaveBalances: this.normalizeLeaveBalances()
+    };
   }
 
   private mapPrismaAttendanceRecord(record: any): AttendanceRecord {
@@ -912,6 +1336,36 @@ export class AppService {
       otherDeductions: Number(record.otherDeductions),
       netPay: Number(record.netPay),
       components: Array.isArray(record.components) ? record.components : [],
+      generatedFileUrl: record.generatedFileUrl ?? null
+    } as PayslipRecord;
+  }
+
+  private mapPrismaPayslipListRecord(record: any): PayslipRecord {
+    return {
+      id: String(record.id),
+      payRunId: String(record.payRunId),
+      userId: String(record.userId),
+      employeeName: String(record.employeeName),
+      employeeNumber: String(record.employeeNumber),
+      department: String(record.department),
+      position: String(record.position),
+      periodLabel: String(record.periodLabel),
+      periodStart: this.toDateString(record.periodStart),
+      periodEnd: this.toDateString(record.periodEnd),
+      payDate: this.toDateString(record.payDate),
+      status: record.status,
+      baseSalary: 0,
+      allowance: 0,
+      overtimePay: 0,
+      additionalEarnings: 0,
+      grossPay: Number(record.grossPay),
+      taxDeduction: Number(record.taxDeduction),
+      otherDeductions: Number(record.otherDeductions),
+      netPay: Number(record.netPay),
+      bankName: String(record.bankName),
+      bankAccountMasked: String(record.bankAccountMasked),
+      taxProfile: "",
+      components: [],
       generatedFileUrl: record.generatedFileUrl ?? null
     } as PayslipRecord;
   }
@@ -1120,34 +1574,113 @@ export class AppService {
     };
   }
 
+  private guessContentType(fileName: string) {
+    const extension = path.extname(fileName).toLowerCase();
+    if (extension === ".jpg" || extension === ".jpeg") {
+      return "image/jpeg";
+    }
+    if (extension === ".png") {
+      return "image/png";
+    }
+    if (extension === ".webp") {
+      return "image/webp";
+    }
+    if (extension === ".gif") {
+      return "image/gif";
+    }
+    return "application/octet-stream";
+  }
+
   async getAttendanceSelfieAsset(attendanceId: string, actor?: AuthenticatedActor) {
+    const cacheKey = this.buildAttendanceSelfieAssetCacheKey(attendanceId, actor);
+    const cachedAsset = this.cachedAttendanceSelfieAssets.get(cacheKey);
+    if (cachedAsset && cachedAsset.expiresAt > Date.now() && existsSync(cachedAsset.absolutePath)) {
+      return {
+        absolutePath: cachedAsset.absolutePath,
+        fileName: cachedAsset.fileName,
+        contentType: cachedAsset.contentType,
+        buffer: cachedAsset.buffer
+      };
+    }
+
     const prisma = this.getPrisma();
     if (prisma) {
-      const attendanceRow = await prisma.attendanceLog.findUnique({
-        where: { id: attendanceId },
-        include: {
-          employee: true
-        }
-      });
+      const attendanceRow = actor?.role === "admin" || actor?.role === "hr"
+        ? await prisma.attendanceLog.findUnique({
+            where: { id: attendanceId },
+            select: {
+              id: true,
+              photoUrl: true
+            }
+          })
+        : actor?.role === "employee"
+          ? await prisma.attendanceLog.findUnique({
+              where: { id: attendanceId },
+              select: {
+                id: true,
+                userId: true,
+                photoUrl: true
+              }
+            })
+          : await prisma.attendanceLog.findUnique({
+              where: { id: attendanceId },
+              select: {
+                id: true,
+                userId: true,
+                photoUrl: true,
+                employee: {
+                  select: {
+                    id: true,
+                    department: true,
+                    managerName: true
+                  }
+                }
+              }
+            });
       if (!attendanceRow) {
         throw new NotFoundException("Attendance record not found");
       }
 
-      const attendance = this.mapPrismaAttendanceRecord(attendanceRow);
+      const attendance = {
+        photoUrl: attendanceRow.photoUrl ?? null
+      };
       if (!attendance.photoUrl) {
         throw new NotFoundException("Attendance selfie not found");
       }
-      const employee = attendanceRow.employee ? this.mapPrismaEmployee(attendanceRow.employee) : undefined;
-      this.assertSensitiveDocumentAccess(actor, employee, "attendance selfie");
+      if (!actor) {
+        throw new ForbiddenException("Session is required to access attendance selfie.");
+      }
+      if (actor.role === "employee") {
+        if (String(attendanceRow.userId) !== actor.id) {
+          throw new ForbiddenException("You are not allowed to access attendance selfie.");
+        }
+      } else if (actor.role === "manager") {
+        const employee = "employee" in attendanceRow && attendanceRow.employee
+          ? {
+              id: String(attendanceRow.employee.id),
+              department: String(attendanceRow.employee.department),
+              managerName: String(attendanceRow.employee.managerName)
+            } as EmployeeRecord
+          : undefined;
+        this.assertSensitiveDocumentAccess(actor, employee, "attendance selfie");
+      }
 
       const absolutePath = this.resolveStoragePath(attendance.photoUrl);
       if (!existsSync(absolutePath)) {
         throw new NotFoundException("Stored attendance selfie not found");
       }
-      return {
+      const fileName = path.basename(absolutePath);
+      const result = {
         absolutePath,
-        fileName: path.basename(absolutePath)
+        fileName,
+        contentType: this.guessContentType(fileName),
+        buffer: await readFile(absolutePath)
       };
+      this.cachedAttendanceSelfieAssets.set(cacheKey, {
+        ...result,
+        expiresAt: Date.now() + ATTENDANCE_SELFIE_ASSET_CACHE_TTL_MS
+      });
+      return result;
     }
 
     const db = await this.readDb();
@@ -1167,7 +1700,9 @@ export class AppService {
     }
     return {
       absolutePath,
-      fileName: path.basename(absolutePath)
+      fileName: path.basename(absolutePath),
+      contentType: this.guessContentType(path.basename(absolutePath)),
+      buffer: await readFile(absolutePath)
     };
   }
 
@@ -1764,7 +2299,7 @@ export class AppService {
     return `${actorName} ${readableAction} ${targetLabel}`.trim();
   }
 
-  private mapPrismaAuditLog(record: any): AuditLogRecord {
+  private mapPrismaAuditLog(record: any, includePayload = true): AuditLogRecord {
     return {
       id: record.id,
       eventKey: record.eventKey,
@@ -1778,41 +2313,34 @@ export class AppService {
       targetId: record.targetId ?? null,
       targetLabel: record.targetLabel ?? null,
       summary: record.summary,
-      beforeData: record.beforeData ?? null,
-      afterData: record.afterData ?? null,
-      metadata: record.metadata ?? null,
+      beforeData: includePayload ? record.beforeData ?? null : null,
+      afterData: includePayload ? record.afterData ?? null : null,
+      metadata: includePayload ? record.metadata ?? null : null,
       ipAddress: record.ipAddress ?? null,
       userAgent: record.userAgent ?? null,
       occurredAt: this.toIsoString(record.occurredAt),
-      createdAt: this.toIsoString(record.createdAt)
+      createdAt: this.toIsoString(record.createdAt ?? record.occurredAt)
     };
   }
 
-  private async writeAuditLog(eventKey: string, details: Record<string, unknown>, actor?: AuthenticatedActor | null) {
-    this.auditQueue = this.auditQueue.then(async () => {
-      let previousHash = "GENESIS";
-      let sequence = 1;
+  private buildEmployeeNumberFromSequence(sequence: number) {
+    return `EMP-2026-${String(Math.max(1, sequence)).padStart(3, "0")}`;
+  }
 
-      if (existsSync(this.auditLogPath)) {
-        const content = await readFile(this.auditLogPath, "utf8");
-        const lines = content
-          .split(/\r?\n/)
-          .map((line) => line.trim())
-          .filter(Boolean);
-        const lastLine = lines.at(-1);
-        sequence = lines.length + 1;
-        if (lastLine) {
-          try {
-            const parsed = JSON.parse(lastLine) as { entryHash?: unknown };
-            if (typeof parsed.entryHash === "string" && parsed.entryHash.trim().length > 0) {
-              previousHash = parsed.entryHash;
-            }
-          } catch {
-            previousHash = "LEGACY";
-          }
-        }
-      }
+  private getNextEmployeeNumber(previousEmployeeNumber?: string | null) {
+    const matchedSequence = previousEmployeeNumber?.match(/(\d+)$/)?.[1];
+    const nextSequence = matchedSequence ? Number.parseInt(matchedSequence, 10) + 1 : 1;
+    return this.buildEmployeeNumberFromSequence(nextSequence);
+  }
 
+  private writeAuditLog(eventKey: string, details: Record<string, unknown>, actor?: AuthenticatedActor | null) {
+    this.cachedAuditLogFirstPage.clear();
+    this.invalidateReadCaches();
+    this.auditQueue = this.auditQueue
+      .catch(() => undefined)
+      .then(async () => {
+      const previousHash = this.lastAuditHash;
+      const sequence = this.lastAuditSequence + 1;
       const timestamp = new Date().toISOString();
       const payload = {
         sequence,
@@ -1831,6 +2359,8 @@ export class AppService {
         hashAlgorithm: "sha256"
       };
       await appendFile(this.auditLogPath, `${JSON.stringify(entry)}\n`, "utf8");
+      this.lastAuditSequence = sequence;
+      this.lastAuditHash = entryHash;
 
       const prisma = this.getPrisma();
       if (prisma?.auditLog?.create) {
@@ -1879,8 +2409,71 @@ export class AppService {
           });
         }
       }
-    });
-    await this.auditQueue;
+    })
+      .catch(async (error) => {
+        await writeSystemLog({
+          source: "backend",
+          event: "audit.queue-failed",
+          level: "error",
+          details: {
+            eventKey,
+            error: error instanceof Error ? error.message : String(error)
+          }
+        });
+      });
+  }
+
+  private invalidateReadCaches() {
+    this.cachedDashboardSummary = null;
+    this.cachedEmployeeFirstPage.clear();
+    this.cachedPayslipFirstPage.clear();
+    this.cachedPayrollOverview = null;
+    this.cachedPayrollComponents = null;
+    this.cachedPayRuns = null;
+    this.cachedAttendanceToday = null;
+    this.cachedAttendanceOverview = null;
+    this.cachedAttendanceSelfieAssets.clear();
+  }
+
+  private buildEmployeeFirstPageCacheKey(query: EmployeeListQueryDto | undefined, actor: AuthenticatedActor | undefined) {
+    const actorScope = actor?.role === "employee" ? `employee:${actor.id}` : "all";
+    return `${actorScope}:${query?.pageSize ?? ""}`;
+  }
+
+  private buildPayslipFirstPageCacheKey(query: PayslipListQueryDto | undefined) {
+    return `${query?.userId ?? "all"}:${query?.pageSize ?? ""}`;
+  }
+
+  private buildAttendanceSelfieAssetCacheKey(attendanceId: string, actor: AuthenticatedActor | undefined) {
+    if (!actor) {
+      return `anonymous:${attendanceId}`;
+    }
+    if (actor.role === "admin" || actor.role === "hr") {
+      return `${actor.role}:${attendanceId}`;
+    }
+    return `${actor.role}:${actor.id}:${attendanceId}`;
+  }
+
+  private async getCurrentDatabaseHealth(maxAgeMs = HEALTH_DATABASE_CACHE_TTL_MS) {
+    if (this.lastKnownDatabaseHealth && Date.now() - this.lastKnownDatabaseHealth.checkedAt <= maxAgeMs) {
+      return this.lastKnownDatabaseHealth.result;
+    }
+
+    const result = await this.databaseService.healthcheck();
+    this.lastKnownDatabaseHealth = {
+      checkedAt: Date.now(),
+      result
+    };
+    return result;
+  }
+
+  private getTodayRangeUtc() {
+    const dayKey = new Date().toISOString().slice(0, 10);
+    return {
+      dayKey,
+      start: new Date(`${dayKey}T00:00:00.000Z`),
+      end: new Date(`${dayKey}T23:59:59.999Z`)
+    };
   }
 
   private safeFileBaseName(input: string, fallback: string) {
@@ -2711,28 +3304,67 @@ export class AppService {
     return false;
   }
 
-  async health() {
-    const database = await this.databaseService.healthcheck();
+  private mapPrismaAuditLogListRecord(record: any): AuditLogRecord {
+    return {
+      id: record.id,
+      eventKey: record.eventKey,
+      module: record.module,
+      action: record.action,
+      actorName: record.actorName ?? null,
+      actorRole: record.actorRole ?? null,
+      actorDepartment: record.actorDepartment ?? null,
+      targetType: record.targetType ?? null,
+      targetId: record.targetId ?? null,
+      targetLabel: record.targetLabel ?? null,
+      summary: record.summary,
+      ipAddress: record.ipAddress ?? null,
+      occurredAt: this.toIsoString(record.occurredAt)
+    } as AuditLogRecord;
+  }
+
+  async health(includeStats = false) {
+    const database = includeStats
+      ? await this.getCurrentDatabaseHealth()
+      : this.lastKnownDatabaseHealth?.result ?? {
+          enabled: this.databaseService.isEnabled(),
+          status: this.databaseService.isEnabled() ? "unknown" : "not-configured"
+        };
+    if (!includeStats) {
+      return {
+        status: database.status === "offline" ? "degraded" : "ok",
+        timestamp: new Date().toISOString(),
+        services: {
+          api: "online",
+          database,
+          storageMode: this.databaseService.getModeLabel(),
+          uptimeSeconds: Math.round(process.uptime())
+        }
+      };
+    }
+
     const prisma = this.getPrisma();
-    const db = prisma
-      ? await Promise.all([
-          prisma.employee.count(),
-          prisma.attendanceLog.count(),
-          prisma.overtimeRequest.count(),
-          prisma.leaveRequest.count(),
-          prisma.reimbursementClaimType.count(),
-          prisma.reimbursementRequest.count(),
-          prisma.payrollComponent.count(),
-          prisma.payRun.count(),
-          prisma.payslip.count()
-        ])
+    const now = Date.now();
+    let services = this.cachedHealthStats && this.cachedHealthStats.expiresAt > now
+      ? this.cachedHealthStats.services
       : null;
 
-    const localDb = db ? null : await this.readDb();
-    return {
-      status: "ok",
-      timestamp: new Date().toISOString(),
-      services: {
+    if (!services) {
+      const db = prisma
+        ? await Promise.all([
+            prisma.employee.count(),
+            prisma.attendanceLog.count(),
+            prisma.overtimeRequest.count(),
+            prisma.leaveRequest.count(),
+            prisma.reimbursementClaimType.count(),
+            prisma.reimbursementRequest.count(),
+            prisma.payrollComponent.count(),
+            prisma.payRun.count(),
+            prisma.payslip.count()
+          ])
+        : null;
+
+      const localDb = db ? null : await this.readDb();
+      services = {
         api: "online",
         database,
         storage: this.storageRoot,
@@ -2745,7 +3377,24 @@ export class AppService {
         payrollComponents: db ? db[6] : localDb!.payrollComponents.length,
         payRuns: db ? db[7] : localDb!.payRuns.length,
         payslips: db ? db[8] : localDb!.payslips.length
-      }
+      };
+      this.cachedHealthStats = {
+        services: {
+          ...services
+        },
+        expiresAt: now + HEALTH_STATS_CACHE_TTL_MS
+      };
+    } else {
+      services = {
+        ...services,
+        database
+      };
+    }
+
+    return {
+      status: "ok",
+      timestamp: new Date().toISOString(),
+      services
     };
   }
 
@@ -2768,6 +3417,10 @@ export class AppService {
     const prisma = this.getPrisma();
 
     if (prisma) {
+      if (this.cachedDashboardSummary && this.cachedDashboardSummary.expiresAt > Date.now()) {
+        return this.cachedDashboardSummary.value;
+      }
+
       const [employees, onTime, late, absent, leavePending] = await Promise.all([
         prisma.employee.count(),
         prisma.attendanceLog.count({ where: { status: "on-time" } }),
@@ -2776,7 +3429,7 @@ export class AppService {
         prisma.leaveRequest.count({ where: { status: { not: "approved" } } })
       ]);
 
-      return {
+      const summary = {
         employees,
         onTime,
         late,
@@ -2784,6 +3437,11 @@ export class AppService {
         leavePending,
         storageMode: this.databaseService.getModeLabel()
       };
+      this.cachedDashboardSummary = {
+        expiresAt: Date.now() + DASHBOARD_SUMMARY_CACHE_TTL_MS,
+        value: summary
+      };
+      return summary;
     }
 
     const db = await this.readDb();
@@ -2847,25 +3505,55 @@ export class AppService {
         ];
       }
 
+      const hasFilters = Boolean(
+        query?.search ||
+        query?.module ||
+        query?.eventKey ||
+        query?.actorUserId ||
+        query?.actorRole ||
+        query?.targetType ||
+        query?.startDate ||
+        query?.endDate
+      );
+      const useCachedFirstPage = !hasFilters && meta.page === 1;
+
       if (!shouldPaginate) {
         const rows = await prisma.auditLog.findMany({
           where,
-          orderBy: { occurredAt: "desc" }
+          orderBy: { occurredAt: "desc" },
+          select: prismaAuditLogListSelect
         });
-        return rows.map((record: any) => this.mapPrismaAuditLog(record));
+        return rows.map((record: any) => this.mapPrismaAuditLogListRecord(record));
       }
 
-      const [total, rows] = await Promise.all([
-        prisma.auditLog.count({ where }),
-        prisma.auditLog.findMany({
-          where,
-          orderBy: { occurredAt: "desc" },
-          skip: meta.skip,
-          take: meta.pageSize
-        })
-      ]);
+      const cachedFirstPage = useCachedFirstPage ? this.cachedAuditLogFirstPage.get(meta.pageSize) : null;
+      if (cachedFirstPage && cachedFirstPage.expiresAt > Date.now()) {
+        return {
+          items: cachedFirstPage.items,
+          total: this.lastAuditSequence,
+          page: meta.page,
+          pageSize: meta.pageSize,
+          hasNext: meta.pageSize < this.lastAuditSequence
+        } satisfies PaginatedResult<AuditLogRecord>;
+      }
 
-      const items = rows.map((record: any) => this.mapPrismaAuditLog(record));
+      const totalPromise = hasFilters ? prisma.auditLog.count({ where }) : Promise.resolve(this.lastAuditSequence);
+      const rowsPromise = prisma.auditLog.findMany({
+        where,
+        orderBy: { occurredAt: "desc" },
+        skip: meta.skip,
+        take: meta.pageSize,
+        select: prismaAuditLogListSelect
+      });
+      const [total, rows] = await Promise.all([totalPromise, rowsPromise]);
+
+      const items = rows.map((record: any) => this.mapPrismaAuditLogListRecord(record));
+      if (useCachedFirstPage) {
+        this.cachedAuditLogFirstPage.set(meta.pageSize, {
+          items,
+          expiresAt: Date.now() + AUDIT_LOG_FIRST_PAGE_CACHE_TTL_MS
+        });
+      }
       return {
         items,
         total,
@@ -2887,6 +3575,19 @@ export class AppService {
 
     if (prisma && shouldPaginate) {
       const meta = this.toPageMeta(query?.page, query?.pageSize);
+      const useCachedFirstPage = meta.page === 1 && !query?.search?.trim() && !query?.department && !query?.role && !query?.status;
+      const firstPageCacheKey = useCachedFirstPage ? this.buildEmployeeFirstPageCacheKey(query, actor) : null;
+      const cachedFirstPage = firstPageCacheKey ? this.cachedEmployeeFirstPage.get(firstPageCacheKey) : null;
+      if (cachedFirstPage && cachedFirstPage.expiresAt > Date.now() && cachedFirstPage.pageSize === meta.pageSize) {
+        return {
+          items: cachedFirstPage.items,
+          total: cachedFirstPage.total,
+          page: meta.page,
+          pageSize: meta.pageSize,
+          hasNext: meta.pageSize < cachedFirstPage.total
+        } satisfies PaginatedResult<EmployeeRecord>;
+      }
+
       const search = query?.search?.trim();
       const where: Record<string, unknown> = {
         ...actorEmployeeFilter,
@@ -2905,19 +3606,34 @@ export class AppService {
         ];
       }
 
+      const cachedTotal =
+        useCachedFirstPage && !search && !query?.department && !query?.role && !query?.status
+          ? actor?.role === "employee"
+            ? 1
+            : this.cachedDashboardSummary?.expiresAt && this.cachedDashboardSummary.expiresAt > Date.now()
+              ? this.cachedDashboardSummary.value.employees
+              : null
+          : null;
       const [total, rows] = await Promise.all([
-        prisma.employee.count({ where }),
+        cachedTotal != null ? Promise.resolve(cachedTotal) : prisma.employee.count({ where }),
         prisma.employee.findMany({
           where,
           orderBy: { name: "asc" },
           skip: meta.skip,
-          take: meta.pageSize
+          take: meta.pageSize,
+          select: prismaEmployeeListSelect
         })
       ]);
 
-      const employees = rows.map((employee: any) => this.sanitizeEmployee({
-        ...this.mapPrismaEmployee(employee)
-      } as EmployeeRecord));
+      const employees = rows.map((employee: any) => this.mapPrismaEmployeeListRecord(employee));
+      if (firstPageCacheKey) {
+        this.cachedEmployeeFirstPage.set(firstPageCacheKey, {
+          items: employees,
+          total,
+          pageSize: meta.pageSize,
+          expiresAt: Date.now() + EMPLOYEE_FIRST_PAGE_CACHE_TTL_MS
+        });
+      }
 
       return {
         items: employees,
@@ -2936,7 +3652,35 @@ export class AppService {
       return employees;
     }
 
-    return this.paginateArray(employees, query?.page, query?.pageSize);
+    return this.paginateArray(employees.map((employee: EmployeeRecord) => this.toEmployeeSummary(employee)), query?.page, query?.pageSize);
+  }
+
+  async getEmployeeById(id: string, actor?: AuthenticatedActor) {
+    if (!actor) {
+      throw new ForbiddenException("Session is required.");
+    }
+    if ((actor.role === "employee" || actor.role === "manager") && actor.id !== id) {
+      throw new ForbiddenException("You are not allowed to access this employee.");
+    }
+
+    const prisma = this.getPrisma();
+    if (prisma) {
+      const employee = await prisma.employee.findUnique({
+        where: { id },
+        select: prismaEmployeeSelect
+      });
+      if (!employee) {
+        throw new NotFoundException("Employee not found");
+      }
+      return this.sanitizeEmployee(this.mapPrismaEmployee(employee));
+    }
+
+    const db = await this.readDb();
+    const employee = db.employees.find((entry) => entry.id === id);
+    if (!employee) {
+      throw new NotFoundException("Employee not found");
+    }
+    return this.sanitizeEmployee(employee);
   }
 
   async authenticateEmployee(username: string, password: string, metadata?: SessionRequestMetadata): Promise<EmployeeLoginResult> {
@@ -3172,72 +3916,94 @@ export class AppService {
   async createEmployee(payload: CreateEmployeeDto, actor?: AuthenticatedActor | null) {
     const prisma = this.getPrisma();
     if (prisma) {
-      const department = await prisma.department.findFirst({
-        where: {
-          name: payload.department
-        }
-      });
+      const managerName = payload.managerName.trim();
+      const loginUsername = payload.appLoginEnabled === false ? null : (payload.loginUsername?.trim() || payload.nik);
+      const employeePassword = payload.appLoginEnabled === false ? null : (payload.loginPassword?.trim() || "employee123");
+      const [
+        department,
+        manager,
+        compensationProfile,
+        selectedComponents,
+        selectedTaxProfile,
+        conflicts,
+        latestEmployeeNumberRow
+      ] = await Promise.all([
+        prisma.department.findUnique({
+          where: {
+            name: payload.department
+          },
+          select: prismaDepartmentWriteSelect
+        }),
+        managerName
+          ? prisma.employee.findFirst({
+              where: {
+                name: managerName,
+                role: "manager",
+                status: "active",
+                department: payload.department
+              },
+              select: { id: true }
+            })
+          : Promise.resolve(null),
+        payload.positionSalaryId
+          ? prisma.compensationProfile.findUnique({
+              where: { id: payload.positionSalaryId },
+              select: prismaCompensationProfileWriteSelect
+            })
+          : Promise.resolve(null),
+        (payload.financialComponentIds?.length ?? 0) > 0
+          ? prisma.payrollComponent.findMany({
+              where: {
+                id: { in: payload.financialComponentIds ?? [] }
+              },
+              select: prismaPayrollComponentAllowanceSelect
+            })
+          : Promise.resolve([]),
+        payload.taxProfileId
+          ? prisma.taxProfile.findUnique({
+              where: { id: payload.taxProfileId },
+              select: prismaTaxProfileWriteSelect
+            })
+          : Promise.resolve(null),
+        prisma.employee.findMany({
+          where: {
+            OR: [
+              { nik: payload.nik },
+              { email: payload.email },
+              { idCardNumber: payload.idCardNumber },
+              ...(payload.appLoginEnabled === false || !loginUsername ? [] : [{ loginUsername }])
+            ]
+          },
+          select: {
+            id: true,
+            nik: true,
+            email: true,
+            idCardNumber: true,
+            appLoginEnabled: true,
+            loginUsername: true
+          }
+        }),
+        prisma.employee.findFirst({
+          orderBy: { employeeNumber: "desc" },
+          select: { employeeNumber: true }
+        })
+      ]);
+
       if (!department) {
         throw new BadRequestException("The department has not been registered in the master data.");
       }
       if (!department.active) {
         throw new BadRequestException("The department is inactive.");
       }
-
-      const managerName = payload.managerName.trim();
-      if (managerName) {
-        const manager = await prisma.employee.findFirst({
-          where: {
-            name: managerName,
-            role: "manager",
-            status: "active",
-            department: payload.department
-          }
-        });
-        if (!manager) {
-          throw new BadRequestException("The assigned manager approver was not found or is inactive.");
-        }
+      if (managerName && !manager) {
+        throw new BadRequestException("The assigned manager approver was not found or is inactive.");
       }
 
-      const compensationProfile = payload.positionSalaryId
-        ? await prisma.compensationProfile.findUnique({ where: { id: payload.positionSalaryId } })
-        : null;
-      const selectedComponents = (payload.financialComponentIds?.length ?? 0) > 0
-        ? await prisma.payrollComponent.findMany({
-            where: {
-              id: { in: payload.financialComponentIds ?? [] }
-            }
-          })
-        : [];
       const allowance = selectedComponents
         .filter((entry: any) => entry.type === "earning")
         .reduce((sum: number, entry: any) => sum + (entry.calculationType === "percentage"
           ? Math.round((Number(compensationProfile?.baseSalary ?? payload.baseSalary)) * ((Number(entry.percentage ?? 0)) / 100))
           : Number(entry.amount)), 0);
-      const selectedTaxProfile = payload.taxProfileId
-        ? await prisma.taxProfile.findUnique({ where: { id: payload.taxProfileId } })
-        : null;
-      const loginUsername = payload.appLoginEnabled === false ? null : (payload.loginUsername?.trim() || payload.nik);
-      const employeePassword = payload.appLoginEnabled === false ? null : (payload.loginPassword?.trim() || "employee123");
-
-      const conflicts = await prisma.employee.findMany({
-        where: {
-          OR: [
-            { nik: payload.nik },
-            { email: payload.email },
-            { idCardNumber: payload.idCardNumber },
-            ...(payload.appLoginEnabled === false || !loginUsername ? [] : [{ loginUsername }])
-          ]
-        },
-        select: {
-          id: true,
-          nik: true,
-          email: true,
-          idCardNumber: true,
-          appLoginEnabled: true,
-          loginUsername: true
-        }
-      });
       for (const conflict of conflicts) {
         if (conflict.nik.trim().toLowerCase() === payload.nik.trim().toLowerCase()) {
           throw new BadRequestException("The NIK is already assigned to another employee.");
@@ -3259,11 +4025,12 @@ export class AppService {
         }
       }
 
-      const employeeCount = await prisma.employee.count();
+      const nextEmployeeNumber = this.getNextEmployeeNumber(latestEmployeeNumberRow?.employeeNumber);
+      const hashedPassword = employeePassword ? await hashPassword(employeePassword) : null;
       const created = await prisma.employee.create({
         data: {
           id: `emp-${randomUUID().slice(0, 8)}`,
-          employeeNumber: `EMP-2026-${String(employeeCount + 1).padStart(3, "0")}`,
+          employeeNumber: nextEmployeeNumber,
           nik: payload.nik,
           name: payload.name,
           email: payload.email,
@@ -3301,7 +4068,7 @@ export class AppService {
           bankAccountMasked: payload.bankAccountMasked,
           appLoginEnabled: payload.appLoginEnabled ?? true,
           loginUsername,
-          loginPassword: employeePassword ? await hashPassword(employeePassword) : null,
+          loginPassword: hashedPassword,
           documents: [],
           leaveBalances: this.normalizeLeaveBalances(payload.leaveBalances as Partial<EmployeeRecord["leaveBalances"]> | undefined)
         }
@@ -3363,7 +4130,8 @@ export class AppService {
     const prisma = this.getPrisma();
     if (prisma) {
       const currentRow = await prisma.employee.findUnique({
-        where: { id }
+        where: { id },
+        select: prismaEmployeeSelect
       });
       if (!currentRow) {
         throw new NotFoundException("Employee not found");
@@ -3381,7 +4149,10 @@ export class AppService {
       } as EmployeeRecord;
 
       const compensationProfile = next.positionSalaryId
-        ? await prisma.compensationProfile.findUnique({ where: { id: next.positionSalaryId } })
+        ? await prisma.compensationProfile.findUnique({
+            where: { id: next.positionSalaryId },
+            select: prismaCompensationProfileWriteSelect
+          })
         : null;
       if (compensationProfile) {
         next.position = compensationProfile.position;
@@ -3390,7 +4161,8 @@ export class AppService {
 
       const selectedComponents = next.financialComponentIds.length > 0
         ? await prisma.payrollComponent.findMany({
-            where: { id: { in: next.financialComponentIds } }
+            where: { id: { in: next.financialComponentIds } },
+            select: prismaPayrollComponentAllowanceSelect
           })
         : [];
       next.allowance = selectedComponents
@@ -3401,7 +4173,12 @@ export class AppService {
 
       if (payload.taxProfileId !== undefined) {
         next.taxProfileId = payload.taxProfileId ?? null;
-        const selectedTaxProfile = next.taxProfileId ? await prisma.taxProfile.findUnique({ where: { id: next.taxProfileId } }) : null;
+        const selectedTaxProfile = next.taxProfileId
+          ? await prisma.taxProfile.findUnique({
+              where: { id: next.taxProfileId },
+              select: prismaTaxProfileWriteSelect
+            })
+          : null;
         if (selectedTaxProfile) {
           next.taxProfile = selectedTaxProfile.name;
         } else if (payload.taxProfileId === null) {
@@ -3424,48 +4201,51 @@ export class AppService {
         }
       }
 
-      const department = await prisma.department.findFirst({
-        where: { name: next.department }
-      });
+      const [department, manager, conflicts] = await Promise.all([
+        prisma.department.findUnique({
+          where: { name: next.department },
+          select: prismaDepartmentWriteSelect
+        }),
+        next.managerName.trim()
+          ? prisma.employee.findFirst({
+              where: {
+                id: { not: id },
+                name: next.managerName,
+                role: "manager",
+                status: "active",
+                department: next.department
+              },
+              select: { id: true }
+            })
+          : Promise.resolve(null),
+        prisma.employee.findMany({
+          where: {
+            id: { not: id },
+            OR: [
+              { nik: next.nik },
+              { email: next.email },
+              { idCardNumber: next.idCardNumber },
+              ...(next.appLoginEnabled && next.loginUsername ? [{ loginUsername: next.loginUsername }] : [])
+            ]
+          },
+          select: {
+            nik: true,
+            email: true,
+            idCardNumber: true,
+            appLoginEnabled: true,
+            loginUsername: true
+          }
+        })
+      ]);
       if (!department) {
         throw new BadRequestException("The department has not been registered in the master data.");
       }
       if (!department.active) {
         throw new BadRequestException("The department is inactive.");
       }
-      if (next.managerName.trim()) {
-        const manager = await prisma.employee.findFirst({
-          where: {
-            id: { not: id },
-            name: next.managerName,
-            role: "manager",
-            status: "active",
-            department: next.department
-          }
-        });
-        if (!manager) {
-          throw new BadRequestException("The assigned manager approver was not found or is inactive.");
-        }
+      if (next.managerName.trim() && !manager) {
+        throw new BadRequestException("The assigned manager approver was not found or is inactive.");
       }
-
-      const conflicts = await prisma.employee.findMany({
-        where: {
-          id: { not: id },
-          OR: [
-            { nik: next.nik },
-            { email: next.email },
-            { idCardNumber: next.idCardNumber },
-            ...(next.appLoginEnabled && next.loginUsername ? [{ loginUsername: next.loginUsername }] : [])
-          ]
-        },
-        select: {
-          nik: true,
-          email: true,
-          idCardNumber: true,
-          appLoginEnabled: true,
-          loginUsername: true
-        }
-      });
       for (const conflict of conflicts) {
         if (conflict.nik.trim().toLowerCase() === next.nik.trim().toLowerCase()) {
           throw new BadRequestException("The NIK is already assigned to another employee.");
@@ -3601,7 +4381,11 @@ export class AppService {
     const prisma = this.getPrisma();
     if (prisma) {
       const existing = await prisma.employee.findUnique({
-        where: { id }
+        where: { id },
+        select: {
+          id: true,
+          name: true
+        }
       });
       if (!existing) {
         throw new NotFoundException("Employee not found");
@@ -3801,11 +4585,8 @@ export class AppService {
         throw new BadRequestException("Department name is required.");
       }
       const duplicate = await prisma.department.findFirst({
-        where: {
-          name: {
-            equals: name
-          }
-        }
+        where: { name },
+        select: { id: true }
       });
       if (duplicate) {
         throw new BadRequestException("The department already exists.");
@@ -3851,7 +4632,8 @@ export class AppService {
     const prisma = this.getPrisma();
     if (prisma) {
       const department = await prisma.department.findUnique({
-        where: { id }
+        where: { id },
+        select: prismaDepartmentWriteSelect
       });
       if (!department) {
         throw new NotFoundException("Department not found");
@@ -3862,10 +4644,9 @@ export class AppService {
         const duplicate = await prisma.department.findFirst({
           where: {
             id: { not: id },
-            name: {
-              equals: nextName
-            }
-          }
+            name: nextName
+          },
+          select: { id: true }
         });
         if (duplicate) {
           throw new BadRequestException("The department already exists.");
@@ -3926,7 +4707,11 @@ export class AppService {
     const prisma = this.getPrisma();
     if (prisma) {
       const department = await prisma.department.findUnique({
-        where: { id }
+        where: { id },
+        select: {
+          id: true,
+          name: true
+        }
       });
       if (!department) {
         throw new NotFoundException("Department not found");
@@ -3989,25 +4774,31 @@ export class AppService {
     const prisma = this.getPrisma();
     if (prisma) {
       const profile = await prisma.compensationProfile.findUnique({
-        where: { id }
+        where: { id },
+        select: prismaCompensationProfileWriteSelect
       });
       if (!profile) {
         throw new NotFoundException("Compensation profile not found");
       }
 
       const previousPosition = profile.position;
+      const shouldSyncEmployees =
+        (payload.position !== undefined && payload.position !== profile.position) ||
+        (payload.baseSalary !== undefined && Number(payload.baseSalary) !== Number(profile.baseSalary));
       const updated = await prisma.$transaction(async (tx: any) => {
         const nextProfile = await tx.compensationProfile.update({
           where: { id },
           data: payload
         });
-        await tx.employee.updateMany({
-          where: { positionSalaryId: id },
-          data: {
-            position: nextProfile.position || previousPosition,
-            baseSalary: nextProfile.baseSalary
-          }
-        });
+        if (shouldSyncEmployees) {
+          await tx.employee.updateMany({
+            where: { positionSalaryId: id },
+            data: {
+              position: nextProfile.position || previousPosition,
+              baseSalary: nextProfile.baseSalary
+            }
+          });
+        }
         return nextProfile;
       });
       return this.mapPrismaCompensationProfile(updated);
@@ -4039,7 +4830,8 @@ export class AppService {
     const prisma = this.getPrisma();
     if (prisma) {
       const exists = await prisma.compensationProfile.findUnique({
-        where: { id }
+        where: { id },
+        select: { id: true }
       });
       if (!exists) {
         throw new NotFoundException("Compensation profile not found");
@@ -4108,21 +4900,31 @@ export class AppService {
     const prisma = this.getPrisma();
     if (prisma) {
       const profile = await prisma.taxProfile.findUnique({
-        where: { id }
+        where: { id },
+        select: {
+          id: true,
+          name: true,
+          rate: true,
+          active: true,
+          description: true
+        }
       });
       if (!profile) {
         throw new NotFoundException("Tax profile not found");
       }
 
+      const shouldSyncEmployees = payload.name !== undefined && payload.name !== profile.name;
       const updated = await prisma.$transaction(async (tx: any) => {
         const nextProfile = await tx.taxProfile.update({
           where: { id },
           data: payload
         });
-        await tx.employee.updateMany({
-          where: { taxProfileId: id },
-          data: { taxProfile: nextProfile.name }
-        });
+        if (shouldSyncEmployees) {
+          await tx.employee.updateMany({
+            where: { taxProfileId: id },
+            data: { taxProfile: nextProfile.name }
+          });
+        }
         return nextProfile;
       });
       return this.mapPrismaTaxProfile(updated);
@@ -4143,7 +4945,8 @@ export class AppService {
     const prisma = this.getPrisma();
     if (prisma) {
       const exists = await prisma.taxProfile.findUnique({
-        where: { id }
+        where: { id },
+        select: { id: true }
       });
       if (!exists) {
         throw new NotFoundException("Tax profile not found");
@@ -4197,7 +5000,8 @@ export class AppService {
       if (!shouldPaginate) {
         const rows = await prisma.attendanceLog.findMany({
           where,
-          orderBy: { timestamp: "desc" }
+          orderBy: { timestamp: "desc" },
+          select: prismaAttendanceSelect
         });
         return rows.map((record: any) => this.toSafeAttendanceRecord(this.mapPrismaAttendanceRecord(record)));
       }
@@ -4208,7 +5012,8 @@ export class AppService {
           where,
           orderBy: { timestamp: "desc" },
           skip: meta.skip,
-          take: meta.pageSize
+          take: meta.pageSize,
+          select: prismaAttendanceSelect
         })
       ]);
 
@@ -4255,17 +5060,27 @@ export class AppService {
   async getAttendanceToday() {
     const prisma = this.getPrisma();
     if (prisma) {
-      const today = new Date().toISOString().slice(0, 10);
+      const { dayKey, start, end } = this.getTodayRangeUtc();
+      if (this.cachedAttendanceToday && this.cachedAttendanceToday.dayKey === dayKey && this.cachedAttendanceToday.expiresAt > Date.now()) {
+        return this.cachedAttendanceToday.items;
+      }
       const rows = await prisma.attendanceLog.findMany({
         where: {
           timestamp: {
-            gte: new Date(`${today}T00:00:00.000Z`),
-            lt: new Date(`${today}T23:59:59.999Z`)
+            gte: start,
+            lt: end
           }
         },
-        orderBy: { timestamp: "desc" }
+        orderBy: { timestamp: "desc" },
+        select: prismaAttendanceSelect
       });
-      return rows.map((entry: any) => this.toSafeAttendanceRecord(this.mapPrismaAttendanceRecord(entry)));
+      const items = rows.map((entry: any) => this.toSafeAttendanceRecord(this.mapPrismaAttendanceRecord(entry)));
+      this.cachedAttendanceToday = {
+        dayKey,
+        expiresAt: Date.now() + 10_000,
+        items
+      };
+      return items;
     }
 
     const db = await this.readDb();
@@ -4278,22 +5093,12 @@ export class AppService {
   async getAttendanceOverview() {
     const prisma = this.getPrisma();
     if (prisma) {
-      const today = new Date().toISOString().slice(0, 10);
+      const { dayKey } = this.getTodayRangeUtc();
+      if (this.cachedAttendanceOverview && this.cachedAttendanceOverview.dayKey === dayKey && this.cachedAttendanceOverview.expiresAt > Date.now()) {
+        return this.cachedAttendanceOverview.value;
+      }
       const [todayRows, overtimeAggregate] = await Promise.all([
-        prisma.attendanceLog.findMany({
-          where: {
-            timestamp: {
-              gte: new Date(`${today}T00:00:00.000Z`),
-              lt: new Date(`${today}T23:59:59.999Z`)
-            }
-          },
-          select: {
-            id: true,
-            checkOut: true,
-            gpsValidated: true,
-            photoUrl: true
-          }
-        }),
+        this.getAttendanceToday(),
         prisma.overtimeRequest.aggregate({
           where: {
             status: { in: ["approved", "paid", "pending"] }
@@ -4304,17 +5109,23 @@ export class AppService {
         })
       ]);
 
-      const openCheckIns = todayRows.filter((entry: any) => !entry.checkOut).length;
-      const gpsValidated = todayRows.filter((entry: any) => entry.gpsValidated).length;
-      const selfieCaptured = todayRows.filter((entry: any) => Boolean(entry.photoUrl)).length;
+      const openCheckIns = todayRows.filter((entry: AttendanceRecord) => !entry.checkOut).length;
+      const gpsValidated = todayRows.filter((entry: AttendanceRecord) => entry.gpsValidated).length;
+      const selfieCaptured = todayRows.filter((entry: AttendanceRecord) => Boolean(entry.photoUrl)).length;
       const overtimeMinutes = Number(overtimeAggregate._sum.minutes ?? 0);
-      return {
+      const value = {
         checkedInToday: todayRows.length,
         openCheckIns,
         gpsValidated,
         selfieCaptured,
         overtimeHours: Number((overtimeMinutes / 60).toFixed(1))
       };
+      this.cachedAttendanceOverview = {
+        dayKey,
+        expiresAt: Date.now() + 10_000,
+        value
+      };
+      return value;
     }
 
     const db = await this.readDb();
@@ -4546,17 +5357,79 @@ export class AppService {
     return overtime;
   }
 
-  async getLeaveHistory() {
+  async getLeaveHistory(query?: { page?: number; pageSize?: number; search?: string; userId?: string; status?: string; type?: string }) {
+    const shouldPaginate = Boolean(query?.page || query?.pageSize || query?.search || query?.userId || query?.status || query?.type);
     const prisma = this.getPrisma();
     if (prisma) {
-      const rows = await prisma.leaveRequest.findMany({
-        orderBy: { requestedAt: "desc" }
-      });
-      return rows.map((record: any) => this.toSafeLeaveRecord(this.mapPrismaLeaveRecord(record)));
+      const meta = this.toPageMeta(query?.page, query?.pageSize);
+      const search = query?.search?.trim();
+      const where: Record<string, unknown> = {
+        ...(query?.userId ? { userId: query.userId } : {}),
+        ...(query?.status ? { status: query.status } : {}),
+        ...(query?.type ? { type: query.type } : {})
+      };
+
+      if (search) {
+        where.OR = [
+          { employeeName: { contains: search } },
+          { type: { contains: search } },
+          { reason: { contains: search } },
+          { balanceLabel: { contains: search } }
+        ];
+      }
+
+      if (!shouldPaginate) {
+        const rows = await prisma.leaveRequest.findMany({
+          where,
+          orderBy: { requestedAt: "desc" }
+        });
+        return rows.map((record: any) => this.toSafeLeaveRecord(this.mapPrismaLeaveRecord(record)));
+      }
+
+      const [total, rows] = await Promise.all([
+        prisma.leaveRequest.count({ where }),
+        prisma.leaveRequest.findMany({
+          where,
+          orderBy: { requestedAt: "desc" },
+          skip: meta.skip,
+          take: meta.pageSize
+        })
+      ]);
+
+      const items = rows.map((record: any) => this.toSafeLeaveRecord(this.mapPrismaLeaveRecord(record)));
+      return {
+        items,
+        total,
+        page: meta.page,
+        pageSize: meta.pageSize,
+        hasNext: meta.skip + items.length < total
+      } satisfies PaginatedResult<LeaveRecord>;
     }
 
     const db = await this.readDb();
-    return db.leaveRequests.map((record) => this.toSafeLeaveRecord(record));
+    let records = db.leaveRequests;
+    if (query?.userId) {
+      records = records.filter((record) => record.userId === query.userId);
+    }
+    if (query?.status) {
+      records = records.filter((record) => record.status === query.status);
+    }
+    if (query?.type) {
+      records = records.filter((record) => record.type === query.type);
+    }
+    if (query?.search?.trim()) {
+      const search = query.search.trim().toLowerCase();
+      records = records.filter((record) =>
+        [record.employeeName, record.type, record.reason, record.balanceLabel].some((value) =>
+          value.toLowerCase().includes(search)
+        )
+      );
+    }
+    const mapped = records.map((record) => this.toSafeLeaveRecord(record));
+    if (!shouldPaginate) {
+      return mapped;
+    }
+    return this.paginateArray(mapped, query?.page, query?.pageSize);
   }
 
   async requestLeave(payload: LeaveRequestDto, file?: Express.Multer.File, supportingDocumentUrl?: string | null) {
@@ -4781,7 +5654,8 @@ export class AppService {
     const prisma = this.getPrisma();
     if (prisma) {
       const employeeRow = await prisma.employee.findUnique({
-        where: { id: payload.employeeId }
+        where: { id: payload.employeeId },
+        select: prismaEmployeeIdentitySelect
       });
       const employee = employeeRow ? this.mapPrismaEmployee(employeeRow) : null;
       const claimType = await prisma.reimbursementClaimType.create({
@@ -4842,7 +5716,10 @@ export class AppService {
       }
 
       const employeeRow = payload.employeeId
-        ? await prisma.employee.findUnique({ where: { id: payload.employeeId } })
+        ? await prisma.employee.findUnique({
+            where: { id: payload.employeeId },
+            select: prismaEmployeeIdentitySelect
+          })
         : null;
       const employee = employeeRow ? this.mapPrismaEmployee(employeeRow) : null;
       const nextAnnualLimit = payload.annualLimit ?? Number(current.annualLimit);
@@ -4898,7 +5775,8 @@ export class AppService {
     const prisma = this.getPrisma();
     if (prisma) {
       const exists = await prisma.reimbursementClaimType.findUnique({
-        where: { id }
+        where: { id },
+        select: { id: true }
       });
       if (!exists) {
         throw new NotFoundException("Reimbursement claim type not found");
@@ -5433,6 +6311,10 @@ export class AppService {
   async getPayrollOverview() {
     const prisma = this.getPrisma();
     if (prisma) {
+      if (this.cachedPayrollOverview && this.cachedPayrollOverview.expiresAt > Date.now()) {
+        return this.cachedPayrollOverview.value;
+      }
+
       const [latestRunRow, payrollComponents, activeEmployees, draftRuns, publishedPayslips] = await Promise.all([
         prisma.payRun.findFirst({
           orderBy: { periodEnd: "desc" }
@@ -5442,13 +6324,18 @@ export class AppService {
         prisma.payRun.count({ where: { status: "draft" } }),
         prisma.payslip.count({ where: { status: "published" } })
       ]);
-      return {
+      const overview = {
         latestRun: latestRunRow ? this.mapPrismaPayRun(latestRunRow) : null,
         payrollComponents,
         activeEmployees,
         draftRuns,
         publishedPayslips
       };
+      this.cachedPayrollOverview = {
+        expiresAt: Date.now() + PAYROLL_OVERVIEW_CACHE_TTL_MS,
+        value: overview
+      };
+      return overview;
     }
 
     const db = await this.readDb();
@@ -5467,10 +6354,19 @@ export class AppService {
   async getPayrollComponents() {
     const prisma = this.getPrisma();
     if (prisma) {
+      if (this.cachedPayrollComponents && this.cachedPayrollComponents.expiresAt > Date.now()) {
+        return this.cachedPayrollComponents.items;
+      }
+
       const rows = await prisma.payrollComponent.findMany({
         orderBy: { code: "asc" }
       });
-      return rows.map((row: any) => this.mapPrismaPayrollComponent(row));
+      const items = rows.map((row: any) => this.mapPrismaPayrollComponent(row));
+      this.cachedPayrollComponents = {
+        expiresAt: Date.now() + PAYROLL_MASTERDATA_CACHE_TTL_MS,
+        items
+      };
+      return items;
     }
 
     const db = await this.readDb();
@@ -5523,7 +6419,8 @@ export class AppService {
     const prisma = this.getPrisma();
     if (prisma) {
       const component = await prisma.payrollComponent.findUnique({
-        where: { id }
+        where: { id },
+        select: { id: true }
       });
       if (!component) {
         throw new NotFoundException("Payroll component not found");
@@ -5553,25 +6450,18 @@ export class AppService {
     const prisma = this.getPrisma();
     if (prisma) {
       const exists = await prisma.payrollComponent.findUnique({
-        where: { id }
+        where: { id },
+        select: { id: true }
       });
       if (!exists) {
         throw new NotFoundException("Payroll component not found");
       }
       await prisma.$transaction(async (tx: any) => {
-        const employees = await tx.employee.findMany();
-        for (const employee of employees) {
-          const current = this.mapPrismaEmployee(employee);
-          if (!current.financialComponentIds.includes(id)) {
-            continue;
-          }
-          await tx.employee.update({
-            where: { id: current.id },
-            data: {
-              financialComponentIds: current.financialComponentIds.filter((componentId) => componentId !== id)
-            }
-          });
-        }
+        await tx.$executeRawUnsafe(
+          "UPDATE `Employee` SET `financialComponentIds` = JSON_REMOVE(`financialComponentIds`, JSON_UNQUOTE(JSON_SEARCH(`financialComponentIds`, 'one', ?))) WHERE JSON_SEARCH(`financialComponentIds`, 'one', ?) IS NOT NULL",
+          id,
+          id
+        );
         await tx.payrollComponent.delete({
           where: { id }
         });
@@ -5596,10 +6486,19 @@ export class AppService {
   async getPayRuns() {
     const prisma = this.getPrisma();
     if (prisma) {
+      if (this.cachedPayRuns && this.cachedPayRuns.expiresAt > Date.now()) {
+        return this.cachedPayRuns.items;
+      }
+
       const rows = await prisma.payRun.findMany({
         orderBy: { periodEnd: "desc" }
       });
-      return rows.map((row: any) => this.mapPrismaPayRun(row));
+      const items = rows.map((row: any) => this.mapPrismaPayRun(row));
+      this.cachedPayRuns = {
+        expiresAt: Date.now() + PAYROLL_MASTERDATA_CACHE_TTL_MS,
+        items
+      };
+      return items;
     }
 
     const db = await this.readDb();
@@ -5763,6 +6662,19 @@ export class AppService {
 
     if (prisma) {
       const meta = this.toPageMeta(query?.page, query?.pageSize);
+      const useCachedFirstPage = shouldPaginate && meta.page === 1 && !query?.search?.trim() && !query?.status;
+      const firstPageCacheKey = useCachedFirstPage ? this.buildPayslipFirstPageCacheKey(query) : null;
+      const cachedFirstPage = firstPageCacheKey ? this.cachedPayslipFirstPage.get(firstPageCacheKey) : null;
+      if (cachedFirstPage && cachedFirstPage.expiresAt > Date.now() && cachedFirstPage.pageSize === meta.pageSize) {
+        return {
+          items: cachedFirstPage.items,
+          total: cachedFirstPage.total,
+          page: meta.page,
+          pageSize: meta.pageSize,
+          hasNext: meta.pageSize < cachedFirstPage.total
+        } satisfies PaginatedResult<PayslipRecord>;
+      }
+
       const search = query?.search?.trim();
       const where: Record<string, unknown> = {
         ...(query?.userId ? { userId: query.userId } : {}),
@@ -5792,11 +6704,20 @@ export class AppService {
           where,
           orderBy: { payDate: "desc" },
           skip: meta.skip,
-          take: meta.pageSize
+          take: meta.pageSize,
+          select: prismaPayslipListSelect
         })
       ]);
 
-      const items = rows.map((record: any) => this.mapPrismaPayslip(record));
+      const items = rows.map((record: any) => this.mapPrismaPayslipListRecord(record));
+      if (firstPageCacheKey) {
+        this.cachedPayslipFirstPage.set(firstPageCacheKey, {
+          items,
+          total,
+          pageSize: meta.pageSize,
+          expiresAt: Date.now() + PAYSLIP_FIRST_PAGE_CACHE_TTL_MS
+        });
+      }
 
       return {
         items,
@@ -5867,8 +6788,19 @@ export class AppService {
     if (this.exportQueue.length > 100) {
       this.exportQueue = this.exportQueue.slice(0, 100);
     }
-    this.processExportQueue().catch(() => undefined);
+    this.scheduleExportQueueProcessing();
     return { jobId: job.id, status: job.status };
+  }
+
+  private scheduleExportQueueProcessing() {
+    if (this.exportWorkerScheduled || this.activeExportJob) {
+      return;
+    }
+    this.exportWorkerScheduled = true;
+    setTimeout(() => {
+      this.exportWorkerScheduled = false;
+      void this.processExportQueue().catch(() => undefined);
+    }, 0);
   }
 
   private async processExportQueue() {
@@ -5901,6 +6833,9 @@ export class AppService {
       }
     } finally {
       this.activeExportJob = false;
+      if (this.exportQueue.some((entry) => entry.status === "queued")) {
+        this.scheduleExportQueueProcessing();
+      }
     }
   }
 

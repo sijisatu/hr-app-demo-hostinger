@@ -137,8 +137,8 @@ function AttendanceModal({ open, onClose }: { open: boolean; onClose: () => void
       id: currentUser.id,
       name: currentUser.name,
       department: currentUser.department,
-      position: currentUser.position,
-      workLocation: locationName
+        position: currentUser.position,
+        workLocation: locationName
     };
   }, [currentUser, employees, locationName]);
 

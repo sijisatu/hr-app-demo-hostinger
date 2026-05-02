@@ -9,8 +9,11 @@ import {
   formatReimbursementStatus,
   getAttendanceOvertime,
   getEmployees,
-  getLeaveHistory,
+  getLeaveHistoryPage,
   getReimbursementRequests,
+  isHalfDayLeaveType,
+  isOnDutyLeaveType,
+  isSickLeaveType,
   type EmployeeRecord
 } from "@/lib/api";
 import { useSession } from "@/components/providers/session-provider";
@@ -46,6 +49,54 @@ function iconFor(kind: NotificationItem["kind"]) {
   }
 }
 
+function leaveApprovalHref(type: string) {
+  if (isOnDutyLeaveType(type)) {
+    return "/attendance/on-duty-request";
+  }
+
+  if (isSickLeaveType(type)) {
+    return "/attendance/sick-submission";
+  }
+
+  if (isHalfDayLeaveType(type)) {
+    return "/attendance/half-day-request";
+  }
+
+  return "/attendance/leave-request";
+}
+
+function leaveApprovalTitle(employeeName: string, type: string) {
+  if (isOnDutyLeaveType(type)) {
+    return `${employeeName} needs on-duty approval`;
+  }
+
+  if (isSickLeaveType(type)) {
+    return `${employeeName} needs sick leave approval`;
+  }
+
+  if (isHalfDayLeaveType(type)) {
+    return `${employeeName} needs half-day leave approval`;
+  }
+
+  return `${employeeName} needs leave approval`;
+}
+
+function hrLeaveReviewTitle(employeeName: string, type: string) {
+  if (isOnDutyLeaveType(type)) {
+    return `${employeeName} is waiting for HR on-duty review`;
+  }
+
+  if (isSickLeaveType(type)) {
+    return `${employeeName} is waiting for HR sick leave review`;
+  }
+
+  if (isHalfDayLeaveType(type)) {
+    return `${employeeName} is waiting for HR half-day review`;
+  }
+
+  return `${employeeName} is waiting for HR leave review`;
+}
+
 export function NotificationCenter() {
   const { currentUser } = useSession();
   const [open, setOpen] = useState(false);
@@ -55,29 +106,33 @@ export function NotificationCenter() {
     queryKey: ["employees"],
     queryFn: getEmployees,
     enabled: canSeeNotifications,
-    staleTime: 30_000,
-    refetchInterval: 45_000
+    staleTime: 120_000,
+    refetchInterval: open ? 120_000 : false,
+    refetchOnWindowFocus: false
   });
   const leaveQuery = useQuery({
-    queryKey: ["leave-history"],
-    queryFn: getLeaveHistory,
+    queryKey: ["leave-history", "notification"],
+    queryFn: () => getLeaveHistoryPage({ page: 1, pageSize: 50 }),
     enabled: canSeeNotifications,
-    staleTime: 30_000,
-    refetchInterval: 45_000
+    staleTime: 120_000,
+    refetchInterval: open ? 120_000 : false,
+    refetchOnWindowFocus: false
   });
   const overtimeQuery = useQuery({
     queryKey: ["attendance-overtime"],
     queryFn: getAttendanceOvertime,
     enabled: currentUser?.role === "manager" || currentUser?.role === "admin",
-    staleTime: 30_000,
-    refetchInterval: 45_000
+    staleTime: 120_000,
+    refetchInterval: open ? 120_000 : false,
+    refetchOnWindowFocus: false
   });
   const reimbursementQuery = useQuery({
     queryKey: ["reimbursement-requests"],
     queryFn: getReimbursementRequests,
     enabled: canSeeNotifications,
-    staleTime: 30_000,
-    refetchInterval: 45_000
+    staleTime: 120_000,
+    refetchInterval: open ? 120_000 : false,
+    refetchOnWindowFocus: false
   });
 
   const notifications = useMemo(() => {
@@ -90,13 +145,13 @@ export function NotificationCenter() {
     const items: NotificationItem[] = [];
 
     if (currentUser.role === "manager") {
-      const leaveItems = (leaveQuery.data ?? [])
+      const leaveItems = (leaveQuery.data?.items ?? [])
         .filter((item) => item.status === "pending-manager" && matchesManagerScope(employeeById.get(item.userId), currentUser.name, currentUser.department))
         .map((item) => ({
           id: `leave-${item.id}`,
-          title: `${item.employeeName} needs leave approval`,
+          title: leaveApprovalTitle(item.employeeName, item.type),
           detail: `${formatLeaveType(item.type)} · ${item.startDate === item.endDate ? item.startDate : `${item.startDate} to ${item.endDate}`}`,
-          href: "/attendance/leave-request",
+          href: leaveApprovalHref(item.type),
           kind: "leave"
         } satisfies NotificationItem));
       const overtimeItems = (overtimeQuery.data ?? [])
@@ -121,13 +176,13 @@ export function NotificationCenter() {
       return [...leaveItems, ...overtimeItems, ...reimbursementItems].slice(0, 12);
     }
 
-    const leaveItems = (leaveQuery.data ?? [])
+    const leaveItems = (leaveQuery.data?.items ?? [])
       .filter((item) => item.status === "awaiting-hr")
       .map((item) => ({
         id: `leave-${item.id}`,
-        title: `${item.employeeName} is waiting for HR leave review`,
+        title: hrLeaveReviewTitle(item.employeeName, item.type),
         detail: `${formatLeaveType(item.type)} · ${item.startDate === item.endDate ? item.startDate : `${item.startDate} to ${item.endDate}`}`,
-        href: "/attendance/leave-report",
+        href: leaveApprovalHref(item.type),
         kind: "leave"
       } satisfies NotificationItem));
     const reimbursementItems = (reimbursementQuery.data ?? [])
